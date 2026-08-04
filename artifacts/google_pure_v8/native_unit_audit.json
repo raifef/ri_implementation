@@ -1,0 +1,27 @@
+{
+  "artifact_hash": "bc1b7e03e9a8b0e275e49cae808f857ddad457d81452a4affcb5f3719cacbeea",
+  "certification_seeds_consumed": false,
+  "classification": "PASS",
+  "contract": "u=u0+s*x",
+  "native_sigma_expected": [
+    0.01,
+    0.019200000000000002,
+    0.04560000000000001,
+    0.05200000000000001,
+    0.05280000000000001,
+    0.096
+  ],
+  "native_sigma_observed": [
+    0.010001414330637247,
+    0.019278974661620003,
+    0.04560847694097327,
+    0.0520896355418048,
+    0.052825511876987793,
+    0.09599973530258506
+  ],
+  "native_sigma_relative_error_max": 0.004113263626041711,
+  "optimum_and_policy_same_units": true,
+  "round_trip_max_error": 1.1102230246251565e-16,
+  "schema_version": "google-pure-v8-native-unit-audit.v1",
+  "sensitivity_applied_exactly_once": true
+}

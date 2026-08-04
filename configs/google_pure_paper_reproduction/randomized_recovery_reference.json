@@ -1,0 +1,1 @@
+{"epochs":1000,"candidates":40,"cycles_per_candidate":100000,"severities":[0.25,0.45,0.65],"seeds":[13421,13422,13423]}

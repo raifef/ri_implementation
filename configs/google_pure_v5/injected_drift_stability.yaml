@@ -1,0 +1,27 @@
+{
+  "schema_version": "google-pure-v5-injected-drift.v1",
+  "frozen_before_controller_evaluation": true,
+  "horizon_epochs": 360,
+  "onset_epoch": 40,
+  "detectors": 12,
+  "controls": 24,
+  "curvature": 0.30,
+  "detector_floor": 0.055,
+  "logical_floor": 0.005,
+  "logical_gain": 1.45,
+  "observation_noise": "finite_shot_binomial",
+  "scenarios": [
+    {"id": "step_cz_l0", "profile": "step", "category": "CZ coupling strength", "location": 0, "amplitude": 0.22, "frequency": 0.0, "phase": 0.0},
+    {"id": "step_xyamp_l5", "profile": "step", "category": "XY pulse amplitude", "location": 5, "amplitude": -0.20, "frequency": 0.0, "phase": 0.0},
+    {"id": "sine_xyfreq_l2", "profile": "sinusoidal", "category": "XY pulse frequency", "location": 2, "amplitude": 0.22, "frequency": 0.0033, "phase": 0.4},
+    {"id": "sine_cz_l8", "profile": "sinusoidal", "category": "CZ coupling strength", "location": 8, "amplitude": 0.19, "frequency": 0.0045, "phase": 1.1},
+    {"id": "strobe_xyamp_l3", "profile": "stroboscopic", "category": "XY pulse amplitude", "location": 3, "amplitude": 0.18, "frequency": 0.0030, "phase": 0.2},
+    {"id": "strobe_xyfreq_l10", "profile": "stroboscopic", "category": "XY pulse frequency", "location": 10, "amplitude": 0.16, "frequency": 0.0040, "phase": 1.6}
+  ],
+  "primary_window_start_fraction": 0.25,
+  "stability_ratio_band": [1.25, 3.8],
+  "mean_ler_improvement_band": [0.05, 0.38],
+  "step_time_constant_band_epochs": [45.0, 240.0],
+  "bootstrap_replicates": 2000,
+  "development_seeds": [7201, 7202, 7203, 7204, 7205, 7206]
+}

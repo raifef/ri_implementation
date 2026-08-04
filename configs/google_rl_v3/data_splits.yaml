@@ -1,0 +1,43 @@
+{
+  "schema_version": "google-v3-data-splits.v1",
+  "freeze_policy": "experiment-level hash partition; contiguous shot blocks; no random adjacent-point mixing",
+  "analysis_reproduction": {
+    "purpose": "published logical-memory estimators only",
+    "members": ["metadata.json", "obs_flips_actual.b8", "decoding_results/*/obs_flips_predicted.b8"],
+    "experiments": "all released experiment cells",
+    "shots": "all",
+    "may_overlap_metadata_only": true
+  },
+  "surrogate_fit": {
+    "purpose": "static detector-observation model identification",
+    "experiment_digest_modulus": 4,
+    "experiment_digest_remainder": 0,
+    "allowed_rounds": [10, 30, 50],
+    "member": "detection_events.b8",
+    "shot_block": [0, 2048],
+    "maximum_experiments": 12
+  },
+  "surrogate_validation": {
+    "purpose": "untouched posterior predictive checks",
+    "experiment_digest_modulus": 4,
+    "experiment_digest_remainder": 1,
+    "allowed_rounds": [10, 30, 50],
+    "member": "detection_events.b8",
+    "shot_block": [0, 2048],
+    "maximum_experiments": 12
+  },
+  "controller_development": {
+    "experiment_digest_modulus": 4,
+    "experiment_digest_remainder": 2,
+    "status": "FROZEN_BUT_INELIGIBLE",
+    "reason": "the release has no logged control actions or candidate-policy outcomes; no offline controller tuning is authorized"
+  },
+  "final_certification": {
+    "experiment_digest_modulus": 4,
+    "experiment_digest_remainder": 3,
+    "status": "LOCKED_UNCONSUMED",
+    "reason": "Prompt 1 forbids final certification",
+    "certification_seeds": [8101, 8102, 8103, 8104, 8105, 8106, 8107, 8108, 8109, 8110, 8111, 8112]
+  }
+}
+

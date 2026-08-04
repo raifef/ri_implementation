@@ -1,0 +1,104 @@
+# Long Step Response (Smoke)
+
+This is an open synthetic reproduction of the published Google-style RL algorithm. Google’s proprietary controller code and hardware control dynamics were unavailable.
+
+- **schema_version:** `google-pure-v7-long-step.v1`
+- **run_class:** `SMOKE_TEST_ONLY`
+- **controller_code_hash:** `3d697c1443c4e710b1d9617814679e027ee502f7754a67ac856987e9992f1130`
+- **resolved_config_hash:** `0b3f2d17251ee11aa09df730553b89767a8d45390cccadc62ed3248019d66d99`
+- **objective_mode:** `source_mapped_v7_production_ppo`
+- **protocol_hash:** `6f180b584fff85fc006dd86f5d50148529b83365aa76f5fc919f4dc31ea05b19`
+- **rows**
+  -
+    - **pre_step_response:** `-0.007574086833076683`
+    - **final_response:** `-0.0046693508511461155`
+    - **target_response:** `0.12`
+    - **final_residual:** `0.12466935085114611`
+    - **achieved_change:** `0.0029047359819305675`
+    - **response_time_50_epochs:** `20`
+    - **response_time_63_2_epochs:** `20`
+    - **response_time_90_epochs:** `28`
+    - **settling_time_95_epochs:** `0`
+    - **settling_tolerance_absolute:** `0.0063787043416538335`
+    - **overshoot:** `0.0004855155604536355`
+    - **integrated_absolute_tracking_error:** `4.794156302355182`
+    - **exponential_fit**
+      - **valid:** `True`
+      - **tau_epochs:** `173.2427994806289`
+      - **tau_profile_confidence_interval_95_epochs**
+        - `28.372790139418864`
+        - `5000.0`
+      - **e_infinity:** `0.10700169465164588`
+      - **e_zero_minus_e_infinity:** `0.021276968114682528`
+      - **fit_r_squared:** `0.844271584961672`
+      - **fit_sse:** `1.0301483282199965e-05`
+    - **response_classification:** `SETTLED`
+    - **step_label:** `small_local_step`
+    - **step_amplitude:** `0.12`
+    - **integrated_excess_error_ratio_mean_over_fixed:** `1.119544862464618`
+    - **learned_integrated_absolute_excess:** `0.0008705799686401661`
+    - **fixed_integrated_absolute_excess:** `0.0007776195468608832`
+    - **denominator_identifiable:** `True`
+    - **independent_detector_acquisition:** `True`
+    - **independent_logical_evaluation:** `True`
+    - **trace_summary**
+      - **mean_gradient_norm:** `0.05545476544245415`
+      - **mean_clipping_fraction:** `0.0`
+      - **mean_policy_scale:** `0.1399976005678768`
+      - **scale_floor_hits:** `0`
+      - **scale_ceiling_hits:** `0`
+  -
+    - **pre_step_response:** `-0.008093392800785002`
+    - **final_response:** `-0.008785681983194469`
+    - **target_response:** `0.22`
+    - **final_residual:** `0.22878568198319446`
+    - **achieved_change:** `-0.0006922891824094664`
+    - **response_time_50_epochs:** `0`
+    - **response_time_63_2_epochs:** `0`
+    - **response_time_90_epochs:** `0`
+    - **settling_time_95_epochs:** `0`
+    - **settling_tolerance_absolute:** `0.01140466964003925`
+    - **overshoot:** `0.006444211988908608`
+    - **integrated_absolute_tracking_error:** `8.80644332704869`
+    - **exponential_fit**
+      - **valid:** `True`
+      - **tau_epochs:** `5000.0`
+      - **tau_profile_confidence_interval_95_epochs**
+        - `131.84113840781163`
+        - `5000.0`
+      - **e_infinity:** `-0.688914393549839`
+      - **e_zero_minus_e_infinity:** `0.9240734422132809`
+      - **fit_r_squared:** `0.8288058113898211`
+      - **fit_sse:** `3.200116366956285e-05`
+    - **response_classification:** `SETTLED`
+    - **step_label:** `moderate_local_step`
+    - **step_amplitude:** `0.22`
+    - **integrated_excess_error_ratio_mean_over_fixed:** `1.1108846655197733`
+    - **learned_integrated_absolute_excess:** `0.0029034811460040885`
+    - **fixed_integrated_absolute_excess:** `0.002613665699171007`
+    - **denominator_identifiable:** `True`
+    - **independent_detector_acquisition:** `True`
+    - **independent_logical_evaluation:** `True`
+    - **trace_summary**
+      - **mean_gradient_norm:** `0.06258516245911731`
+      - **mean_clipping_fraction:** `0.0`
+      - **mean_policy_scale:** `0.13999775968774264`
+      - **scale_floor_hits:** `0`
+      - **scale_ceiling_hits:** `0`
+- **artifact_complete:** `True`
+- **mechanism_valid:** `True`
+- **performance_pass:** `False`
+- **blocking_reasons**
+  - `48/96-epoch class run is SMOKE_TEST_ONLY and excluded from scientific conclusions`
+- **cost**
+  - **resolved_controller_hash:** `0b3f2d17251ee11aa09df730553b89767a8d45390cccadc62ed3248019d66d99`
+  - **expected_wall_time:** `simulator-dependent; full acquisition intentionally user-triggered`
+  - **candidate_count:** `768`
+  - **epoch_count:** `96`
+  - **qec_cycle_count:** `2304000`
+  - **memory_estimate_bytes:** `33792`
+  - **disk_estimate_bytes:** `224256`
+  - **certification_seed_status:** `active seeds 12101-12112 untouched`
+- **certification_seeds_consumed:** `False`
+- **status:** `SMOKE_TEST_ONLY`
+- **disclaimer:** `This is an open synthetic reproduction of the published Google-style RL algorithm. Google’s proprietary controller code and hardware control dynamics were unavailable.`

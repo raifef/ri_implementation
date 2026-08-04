@@ -1,0 +1,14 @@
+# Frozen v8 Controller/Audit Contract
+
+- **schema_version**: `"google-pure-v8-repaired-controller-contract.v1"`
+- **base_controller_hash**: `"0b3f2d17251ee11aa09df730553b89767a8d45390cccadc62ed3248019d66d99"`
+- **base_controller_code_hash**: `"3d697c1443c4e710b1d9617814679e027ee502f7754a67ac856987e9992f1130"`
+- **accepted_behavior_changes**: `[]`
+- **accepted_repairs**: `["machine-readable EDR normalization and denominator gate", "matched finite-shot five-policy feasibility evaluator", "recursive immutable audit snapshots", "read-only behaviour snapshots in v8 diagnostics", "claim-safe failure classification"]`
+- **source_compatible_controller_change_identified**: `false`
+- **reason**: `"public information does not uniquely identify a replacement scale floor or entropy sweep normalization"`
+- **full_reference_acquisition_permitted**: `false`
+- **audit_hashes**: `{"pre_repair_snapshot": "29dd97b03de7b42da5107345c10c984626faadce45d3ca0c71b13fa7a72c0e61", "mathematical_contracts": "c55263700691f21f340621d6e2429b3c7167d4088696635a4c4d99578f424f01", "figure5a_edr_identity_audit": "14d3014141e868aad067ce39142aa31fc121b5e5d1924a444f6fe0d6d116d838", "figure5a_feasibility_decomposition": "8ace327842b5595fdd081edb8918e3a690ea4a506401fc88b8f7c25b43c2aeb2", "exploration_floor_feasibility": "77853e7fe01d20cc91b79319938eef9596437d8fdb07be6a25f6f7c1932d2c2d", "entropy_and_scale_plumbing_audit": "161c47bcaa81ba6a8306feca69e332428399223eced9afe5e269476656af94e4", "native_unit_audit": "bc1b7e03e9a8b0e275e49cae808f857ddad457d81452a4affcb5f3719cacbeea", "clipping_and_likelihood_audit": "c2531bdc8e8cd9170257eccff27c0687cee8b7722f1b7b6b0101e5233919f321", "ppo_update_lifecycle_audit": "df9c2a1439c85b1538aae42ac06639b0817f4a47dd2e434c6887728a8c0e5e93", "baseline_freezing_audit": "b8347e2ffe1962762fe6078288ac72a937c0c40478f5443f9bf2f1e79f40a8a5", "temporal_protocol_audit": "9ac87754a48c1d8e568c93e4d55e7e766782e61a30ae6961e3b6d42cd11c62d0", "compact_fault_isolation_matrix": "6b996fa2ae12b11c78615c42d8a33d6fc54f52fad8beffad63ad9a9d9307ff6c"}`
+- **contract_hash**: `"4113a7f20d1935504e0f9b64de0468dedbcb80742fb1b2be89bb2cf12468322c"`
+- **certification_seeds_consumed**: `false`
+- **artifact_hash**: `"dd565d9e273fd68cb48153a499c0a1c0c8e1adc3374a1a3c12e0606c794b9b6b"`

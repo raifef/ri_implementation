@@ -1,0 +1,13 @@
+{
+  "schema_version": "google-pure-v5-paper-scale.v1",
+  "candidates_per_epoch": 40,
+  "shots_per_candidate": 4000,
+  "qec_cycles_per_shot": 25,
+  "effective_cycles_per_candidate": 100000,
+  "mean_policy_diagnostic_cycles": 100000,
+  "fixed_policy_diagnostic_cycles": 100000,
+  "logical_evaluation_cycles": 100000,
+  "host_computation_accounted_separately": true,
+  "idealized_device_acquisition_seconds_per_epoch": 4.0,
+  "reduced_budget_reference_forbidden": 2048
+}

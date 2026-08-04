@@ -1,0 +1,9 @@
+{
+  "schema_version": "exploration-calibration-v6.1",
+  "initial_scales": [0.035, 0.05, 0.07, 0.1, 0.14],
+  "minimum_nonzero_scale": 0.025,
+  "selection_rule": "best_drift_score_subject_to_static_damage_and_nonzero_exploration",
+  "static_damage_limit": 0.004,
+  "zero_exploration_forbidden": true,
+  "frozen_before_evaluation": true
+}

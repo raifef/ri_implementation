@@ -1,0 +1,1 @@
+{"mode":"reference","distances":[3,5,7,9,11,13,15],"parameters_per_gate":[30],"epochs":500,"memory_cycles":10,"graph_degree_bound":32}

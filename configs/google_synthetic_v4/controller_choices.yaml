@@ -1,0 +1,24 @@
+{
+  "schema_version": "google-synthetic-v4-controller-choices.v1",
+  "sampling": {"paper_candidates_per_epoch":40,"paper_effective_cycles_per_candidate":100000,"paper_shots_per_candidate":4000,"paper_qec_cycles_per_shot":25,"short_epochs":96,"broad_epochs":480},
+  "recovery_protocol": {"spoil_levels":{"moderate":0.35,"paper_analogue":0.60,"severe":0.85},"paper_analogue_frozen_before_testing":true,"recovery_excess_fraction_remaining":0.20,"short_horizon_epochs":180},
+  "baseline": {"initial_std":0.10,"mean_learning_rate":0.18,"scale_learning_rate":0.006,"baseline_learning_rate":0.08,"entropy_weight":0.002,"target_std":null,"target_strength":0.0,"ppo_clip":0.20,"gradient_clip":1.0,"optimizer_passes":4,"replay_epochs":2,"replay_decay":1.0,"minimum_std":0.008,"maximum_std":0.30,"absolute_bound":1.0,"natural_mean":false,"variance_weighted":false},
+  "amendments": [
+    {"name":"separate_optimizers","change":{"mean_learning_rate":0.16,"scale_learning_rate":0.003},"hypothesis":"reduce high-frequency scale/mean update interference"},
+    {"name":"target_exploration","change":{"entropy_weight":0.0,"target_std":0.055,"target_strength":0.08,"scale_learning_rate":0.010},"hypothesis":"remove unnecessary steady-state candidate variance while retaining gradient signal"},
+    {"name":"baseline_timescale","change":{"baseline_learning_rate":0.50},"hypothesis":"reduce lag-correlated advantages; value selected on mechanism-development autocorrelation and bounded-harm tests"},
+    {"name":"no_replay","change":{"replay_epochs":0},"hypothesis":"remove off-policy lag under drift"},
+    {"name":"wider_ppo_clip","change":{"ppo_clip":0.30},"hypothesis":"avoid suppressing corrective updates"},
+    {"name":"natural_mean","change":{"natural_mean":true,"mean_learning_rate":0.08},"hypothesis":"Fisher-scale mean updates for smoother tracking"},
+    {"name":"variance_weighted","change":{"variance_weighted":true},"hypothesis":"prevent noisy detector factors dominating the local objective"}
+  ],
+  "pareto_rule_frozen_before_study": {
+    "required": ["no_drift_non_regression","fine_tuning_benefit","low_frequency_suppression","plausible_step_response","material_stability_improvement","exploration_damage_bound","steering_not_collapsed","recovery_success","harmful_update_bounded"],
+    "material_stability_relative_improvement":0.08,
+    "maximum_no_drift_regression_fraction":0.05,
+    "maximum_exploration_damage_fraction":0.35,
+    "minimum_low_frequency_suppression_db":2.0,
+    "step_response_range_epochs":[20,220],
+    "selection":"non-dominated feasible amendments; never distance to 2.4"
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "artifact_hash": "2fe7d9b0efd5569e156e50d525d1b6509d908e7c8b0722608a90486689673c9a",
+  "one_primary_family_per_artifact": true,
+  "rows": [
+    {
+      "experiment_family": "PUBLIC_ENDPOINT_DATA_REPRODUCTION",
+      "forbidden_cross_run_claims": [
+        "FIGURE5A_REAL_TIME_STEERING",
+        "FIGURE5B_SPARSE_SCALING",
+        "FIGURE5C_CONVERGENCE_LAW",
+        "NATURAL_DRIFT_SPECTRAL_SUPPRESSION",
+        "RANDOMIZED_RECOVERY_AFTER_SPOIL",
+        "STEP_RESPONSE_INJECTED_DRIFT",
+        "PUBLIC_TABLE_REPRODUCTION"
+      ],
+      "required_identity_fields": [
+        "controller_hash",
+        "protocol_hash",
+        "plant_hash",
+        "graph_hash",
+        "seed_registry_hash",
+        "observable_definition",
+        "evaluation_budget"
+      ],
+      "run_family": "released_static_memory_endpoints",
+      "same_run_claims": []
+    },
+    {
+      "experiment_family": "FIGURE5A_REAL_TIME_STEERING",
+      "forbidden_cross_run_claims": [
+        "PUBLIC_ENDPOINT_DATA_REPRODUCTION",
+        "FIGURE5B_SPARSE_SCALING",
+        "FIGURE5C_CONVERGENCE_LAW",
+        "NATURAL_DRIFT_SPECTRAL_SUPPRESSION",
+        "RANDOMIZED_RECOVERY_AFTER_SPOIL",
+        "STEP_RESPONSE_INJECTED_DRIFT",
+        "PUBLIC_TABLE_REPRODUCTION"
+      ],
+      "required_identity_fields": [
+        "controller_hash",
+        "protocol_hash",
+        "plant_hash",
+        "graph_hash",
+        "seed_registry_hash",
+        "observable_definition",
+        "evaluation_budget"
+      ],
+      "run_family": "synthetic_sinusoidal_candidate_stream",
+      "same_run_claims": []
+    },
+    {
+      "experiment_family": "FIGURE5B_SPARSE_SCALING",
+      "forbidden_cross_run_claims": [
+        "PUBLIC_ENDPOINT_DATA_REPRODUCTION",
+        "FIGURE5A_REAL_TIME_STEERING",
+        "FIGURE5C_CONVERGENCE_LAW",
+        "NATURAL_DRIFT_SPECTRAL_SUPPRESSION",
+        "RANDOMIZED_RECOVERY_AFTER_SPOIL",
+        "STEP_RESPONSE_INJECTED_DRIFT",
+        "PUBLIC_TABLE_REPRODUCTION"
+      ],
+      "required_identity_fields": [
+        "controller_hash",
+        "protocol_hash",
+        "plant_hash",
+        "graph_hash",
+        "seed_registry_hash",
+        "observable_definition",
+        "evaluation_budget"
+      ],
+      "run_family": "synthetic_sparse_scaling",
+      "same_run_claims": []
+    },
+    {
+      "experiment_family": "FIGURE5C_CONVERGENCE_LAW",
+      "forbidden_cross_run_claims": [
+        "PUBLIC_ENDPOINT_DATA_REPRODUCTION",
+        "FIGURE5A_REAL_TIME_STEERING",
+        "FIGURE5B_SPARSE_SCALING",
+        "NATURAL_DRIFT_SPECTRAL_SUPPRESSION",
+        "RANDOMIZED_RECOVERY_AFTER_SPOIL",
+        "STEP_RESPONSE_INJECTED_DRIFT",
+        "PUBLIC_TABLE_REPRODUCTION"
+      ],
+      "required_identity_fields": [
+        "controller_hash",
+        "protocol_hash",
+        "plant_hash",
+        "graph_hash",
+        "seed_registry_hash",
+        "observable_definition",
+        "evaluation_budget"
+      ],
+      "run_family": "synthetic_local_convergence",
+      "same_run_claims": []
+    },
+    {
+      "experiment_family": "NATURAL_DRIFT_SPECTRAL_SUPPRESSION",
+      "forbidden_cross_run_claims": [
+        "PUBLIC_ENDPOINT_DATA_REPRODUCTION",
+        "FIGURE5A_REAL_TIME_STEERING",
+        "FIGURE5B_SPARSE_SCALING",
+        "FIGURE5C_CONVERGENCE_LAW",
+        "RANDOMIZED_RECOVERY_AFTER_SPOIL",
+        "STEP_RESPONSE_INJECTED_DRIFT",
+        "PUBLIC_TABLE_REPRODUCTION"
+      ],
+      "required_identity_fields": [
+        "controller_hash",
+        "protocol_hash",
+        "plant_hash",
+        "graph_hash",
+        "seed_registry_hash",
+        "observable_definition",
+        "evaluation_budget"
+      ],
+      "run_family": "synthetic_frozen_natural_ensemble",
+      "same_run_claims": []
+    },
+    {
+      "experiment_family": "RANDOMIZED_RECOVERY_AFTER_SPOIL",
+      "forbidden_cross_run_claims": [
+        "PUBLIC_ENDPOINT_DATA_REPRODUCTION",
+        "FIGURE5A_REAL_TIME_STEERING",
+        "FIGURE5B_SPARSE_SCALING",
+        "FIGURE5C_CONVERGENCE_LAW",
+        "NATURAL_DRIFT_SPECTRAL_SUPPRESSION",
+        "STEP_RESPONSE_INJECTED_DRIFT",
+        "PUBLIC_TABLE_REPRODUCTION"
+      ],
+      "required_identity_fields": [
+        "controller_hash",
+        "protocol_hash",
+        "plant_hash",
+        "graph_hash",
+        "seed_registry_hash",
+        "observable_definition",
+        "evaluation_budget"
+      ],
+      "run_family": "synthetic_policy_spoil",
+      "same_run_claims": []
+    },
+    {
+      "experiment_family": "STEP_RESPONSE_INJECTED_DRIFT",
+      "forbidden_cross_run_claims": [
+        "PUBLIC_ENDPOINT_DATA_REPRODUCTION",
+        "FIGURE5A_REAL_TIME_STEERING",
+        "FIGURE5B_SPARSE_SCALING",
+        "FIGURE5C_CONVERGENCE_LAW",
+        "NATURAL_DRIFT_SPECTRAL_SUPPRESSION",
+        "RANDOMIZED_RECOVERY_AFTER_SPOIL",
+        "PUBLIC_TABLE_REPRODUCTION"
+      ],
+      "required_identity_fields": [
+        "controller_hash",
+        "protocol_hash",
+        "plant_hash",
+        "graph_hash",
+        "seed_registry_hash",
+        "observable_definition",
+        "evaluation_budget"
+      ],
+      "run_family": "synthetic_persistent_optimum_step",
+      "same_run_claims": []
+    },
+    {
+      "experiment_family": "PUBLIC_TABLE_REPRODUCTION",
+      "forbidden_cross_run_claims": [
+        "PUBLIC_ENDPOINT_DATA_REPRODUCTION",
+        "FIGURE5A_REAL_TIME_STEERING",
+        "FIGURE5B_SPARSE_SCALING",
+        "FIGURE5C_CONVERGENCE_LAW",
+        "NATURAL_DRIFT_SPECTRAL_SUPPRESSION",
+        "RANDOMIZED_RECOVERY_AFTER_SPOIL",
+        "STEP_RESPONSE_INJECTED_DRIFT"
+      ],
+      "required_identity_fields": [
+        "controller_hash",
+        "protocol_hash",
+        "plant_hash",
+        "graph_hash",
+        "seed_registry_hash",
+        "observable_definition",
+        "evaluation_budget"
+      ],
+      "run_family": "released_static_memory_tables",
+      "same_run_claims": []
+    }
+  ],
+  "schema_version": "google-pure-evidence-v8-family-contract.v1",
+  "separate_paper_runs_never_form_simultaneous_scorecard": true
+}

@@ -1,0 +1,30 @@
+{
+  "artifact_hash": "d8bde849d33d44c7e90e0dd3eba1d3e8c80eecb94af947bc4e521c0859a7c99f",
+  "claim_id": "natural.low_frequency_4db",
+  "composite_blocker": "LOCAL_PAPER_PANEL_NOT_SUPPLIED",
+  "experiment_family": "NATURAL_DRIFT_SPECTRAL_SUPPRESSION",
+  "numerical_comparison": {
+    "paper_uncertainty": "not locally identifiable",
+    "paper_value": "not locally identifiable",
+    "reproduction_value": 1.0975470454269263
+  },
+  "paper_reference_assets": [],
+  "pixel_similarity_metric_used": false,
+  "prompt1_hash": "68c3d8f21d675a98ac09407432166ad09fc403069e9574db29a0f95b5a5ac483",
+  "reproduction_artifact": "artifacts/google_pure_evidence_v8/natural_drift/summary.json",
+  "schema_version": "google-pure-evidence-v8-family-comparison.v2",
+  "scientific_checklist": {
+    "axes": "recorded in reproduction artifact",
+    "controller_mode": "hash required",
+    "evaluation_budget": "required",
+    "normalization": "recorded in reproduction artifact",
+    "quantity_definition": true,
+    "run_family": "synthetic_frozen_natural_ensemble",
+    "scientific_conclusion": "INVALID_DIAGNOSTIC",
+    "uncertainty": "required",
+    "units": "recorded in reproduction artifact",
+    "visual_grammar": "secondary"
+  },
+  "side_by_side_composite_created": false,
+  "verdict": "NOT_PUBLICLY_IDENTIFIABLE"
+}

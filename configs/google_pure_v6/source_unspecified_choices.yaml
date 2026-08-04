@@ -1,0 +1,44 @@
+{
+  "schema_version": "google-pure-v6.1",
+  "profiles": {
+    "unchanged_v5_equivalent": {
+      "objective_mode": "legacy_v5_component_clipping",
+      "initial_scale": 0.14,
+      "scale_bounds": [0.04, 0.25],
+      "normalized_bounds": [-1.0, 1.0],
+      "mean_learning_rate": 0.03,
+      "scale_learning_rate": 0.002,
+      "baseline_coefficient": 0.08,
+      "replay_capacity_epochs": 1,
+      "ppo_clip": 0.2,
+      "entropy_coefficient": 0.0004,
+      "update_passes": 1
+    },
+    "source_literal_default": {
+      "objective_mode": "source_literal_ppo",
+      "initial_scale": 0.14,
+      "scale_bounds": [0.04, 0.25],
+      "normalized_bounds": [-1.0, 1.0],
+      "mean_learning_rate": 0.03,
+      "scale_learning_rate": 0.002,
+      "baseline_coefficient": 0.08,
+      "replay_capacity_epochs": 1,
+      "ppo_clip": 0.2,
+      "entropy_coefficient": 0.0004,
+      "update_passes": 1
+    },
+    "low_damage_candidate": {
+      "objective_mode": "source_literal_ppo",
+      "initial_scale": 0.07,
+      "scale_bounds": [0.025, 0.18],
+      "normalized_bounds": [-1.0, 1.0],
+      "mean_learning_rate": 0.025,
+      "scale_learning_rate": 0.001,
+      "baseline_coefficient": 0.08,
+      "replay_capacity_epochs": 0,
+      "ppo_clip": 0.2,
+      "entropy_coefficient": 0.0001,
+      "update_passes": 1
+    }
+  }
+}

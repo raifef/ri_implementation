@@ -1,0 +1,34 @@
+{
+  "artifact_hash": "c55263700691f21f340621d6e2429b3c7167d4088696635a4c4d99578f424f01",
+  "certification_seeds_consumed": false,
+  "coordinates": {
+    "native": "u0 + s*x",
+    "native_sigma": "abs(s)*normalized_sigma",
+    "normalized": "(u-u0)/s"
+  },
+  "entropy": {
+    "counted": "exactly once globally",
+    "gradient_per_coordinate": 1.0,
+    "optimized_variable": "log_sigma"
+  },
+  "figure5a": {
+    "denominator": "fixed_edr - oracle_edr",
+    "denominator_gate": "positive, finite, statistically resolved",
+    "fixed_substitution_expected": 0.0,
+    "higher_is_better": true,
+    "metric": "normalized_candidate_edr_improvement",
+    "numerator": "fixed_edr - candidate_edr",
+    "oracle_substitution_expected": 1.0
+  },
+  "ppo": {
+    "behaviour_snapshot": "immutable value copy",
+    "denominator_detached": true,
+    "local_mask_only": true,
+    "ratio": "product over i in S_j of pi_current_i / pi_behaviour_i"
+  },
+  "schema_version": "google-pure-v8-mathematical-contracts.v1",
+  "temporal": {
+    "frequency_unit": "cycles_per_epoch",
+    "optimum": "u0 + A*sin(2*pi*f*t + phase)"
+  }
+}

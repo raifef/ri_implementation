@@ -1,0 +1,12 @@
+{
+  "schema_version": "google-pure-v7-timescale-strobe.v1",
+  "pattern": [0.0, 1.0],
+  "symmetric_sign_flip_forbidden": true,
+  "zero_denominator_substitution_forbidden": true,
+  "cross_family_aggregation_forbidden": true,
+  "dwell_tau_ratios": [0.5, 1.0, 2.0, 5.0],
+  "primary_slow_dwell_tau_ratio": 5.0,
+  "transitions": 8,
+  "amplitude": 0.12,
+  "frozen_before_full_run": true
+}

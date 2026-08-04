@@ -1,0 +1,18 @@
+{
+  "schema_version": "google-pure-v7-long-step.v1",
+  "small_step_amplitude": 0.12,
+  "moderate_step_amplitude": 0.22,
+  "onset_fraction": 0.2,
+  "smoke_horizon_epochs": 96,
+  "full_horizon_epochs": 5000,
+  "candidates_per_epoch_smoke": 8,
+  "candidates_per_epoch_full": 40,
+  "effective_cycles_per_candidate_smoke": 3000,
+  "effective_cycles_per_candidate_full": 100000,
+  "settling_relative_tolerance": 0.05,
+  "minimum_sustained_settling_epochs": 25,
+  "fit_profile_tau_min_epochs": 1.0,
+  "fit_profile_tau_max_epochs": 5000.0,
+  "fit_profile_grid_points": 500,
+  "frozen_before_full_run": true
+}

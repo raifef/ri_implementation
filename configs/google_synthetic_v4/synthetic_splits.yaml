@@ -1,0 +1,9 @@
+{
+  "schema_version": "google-synthetic-v4-splits.v1",
+  "frozen": true,
+  "plant_construction": {"plant_ids":["pc-local-1","pc-common-1"],"evaluation_seeds":[7301,7302]},
+  "controller_development": {"plant_ids":["dev-local-1","dev-common-1","dev-step-1","dev-sine-1"],"evaluation_seeds":[7701,7702,7703,7704]},
+  "development_validation": {"plant_ids":["val-local-1","val-common-1","val-step-1","val-sine-1","val-recovery-1","val-scaling-1"],"evaluation_seeds":[7901,7902,7903,7904,7905,7906]},
+  "certification": {"plant_ids":["cert-local-1","cert-local-2","cert-common-1","cert-common-2","cert-step-1","cert-step-2","cert-sine-1","cert-sine-2","cert-recovery-1","cert-recovery-2","cert-scaling-1","cert-scaling-2"],"evaluation_seeds":[8101,8102,8103,8104,8105,8106,8107,8108,8109,8110,8111,8112],"status":"LOCKED_UNCONSUMED"},
+  "physical_disjointness_fields": ["drift_phase","drift_amplitude","drift_frequency","graph_realization","local_curvature","detector_covariance","spoil_severity","coupling_pattern"]
+}

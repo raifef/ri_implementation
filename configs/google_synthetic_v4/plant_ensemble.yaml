@@ -1,0 +1,33 @@
+{
+  "schema_version": "google-synthetic-v4-ensemble.v1",
+  "frozen_draw_algorithm": "numpy-pcg64-v1 from declared plant_draw_seed; evaluation seeds are separate",
+  "development_subgraph": {"detectors":12,"controls_per_detector_cell":2,"factor_radius":1,"normalized_bound":1.0},
+  "families": ["local_quadratic_drift","common_mode_plus_local","step_perturbation","sinusoidal_steering","randomized_policy_recovery","large_sparse_scaling"],
+  "draws": [
+    {"plant_id":"pc-local-1","split":"plant_construction","family":"local_quadratic_drift","plant_draw_seed":7401},
+    {"plant_id":"pc-common-1","split":"plant_construction","family":"common_mode_plus_local","plant_draw_seed":7402},
+    {"plant_id":"dev-local-1","split":"controller_development","family":"local_quadratic_drift","plant_draw_seed":7501},
+    {"plant_id":"dev-common-1","split":"controller_development","family":"common_mode_plus_local","plant_draw_seed":7502},
+    {"plant_id":"dev-step-1","split":"controller_development","family":"step_perturbation","plant_draw_seed":7503},
+    {"plant_id":"dev-sine-1","split":"controller_development","family":"sinusoidal_steering","plant_draw_seed":7504},
+    {"plant_id":"val-local-1","split":"development_validation","family":"local_quadratic_drift","plant_draw_seed":7601},
+    {"plant_id":"val-common-1","split":"development_validation","family":"common_mode_plus_local","plant_draw_seed":7602},
+    {"plant_id":"val-step-1","split":"development_validation","family":"step_perturbation","plant_draw_seed":7603},
+    {"plant_id":"val-sine-1","split":"development_validation","family":"sinusoidal_steering","plant_draw_seed":7604},
+    {"plant_id":"val-recovery-1","split":"development_validation","family":"randomized_policy_recovery","plant_draw_seed":7605},
+    {"plant_id":"val-scaling-1","split":"development_validation","family":"large_sparse_scaling","plant_draw_seed":7606},
+    {"plant_id":"cert-local-1","split":"certification","family":"local_quadratic_drift","plant_draw_seed":8401,"evaluation_seed":8101},
+    {"plant_id":"cert-local-2","split":"certification","family":"local_quadratic_drift","plant_draw_seed":8402,"evaluation_seed":8102},
+    {"plant_id":"cert-common-1","split":"certification","family":"common_mode_plus_local","plant_draw_seed":8403,"evaluation_seed":8103},
+    {"plant_id":"cert-common-2","split":"certification","family":"common_mode_plus_local","plant_draw_seed":8404,"evaluation_seed":8104},
+    {"plant_id":"cert-step-1","split":"certification","family":"step_perturbation","plant_draw_seed":8405,"evaluation_seed":8105},
+    {"plant_id":"cert-step-2","split":"certification","family":"step_perturbation","plant_draw_seed":8406,"evaluation_seed":8106},
+    {"plant_id":"cert-sine-1","split":"certification","family":"sinusoidal_steering","plant_draw_seed":8407,"evaluation_seed":8107},
+    {"plant_id":"cert-sine-2","split":"certification","family":"sinusoidal_steering","plant_draw_seed":8408,"evaluation_seed":8108},
+    {"plant_id":"cert-recovery-1","split":"certification","family":"randomized_policy_recovery","plant_draw_seed":8409,"evaluation_seed":8109},
+    {"plant_id":"cert-recovery-2","split":"certification","family":"randomized_policy_recovery","plant_draw_seed":8410,"evaluation_seed":8110},
+    {"plant_id":"cert-scaling-1","split":"certification","family":"large_sparse_scaling","plant_draw_seed":8411,"evaluation_seed":8111},
+    {"plant_id":"cert-scaling-2","split":"certification","family":"large_sparse_scaling","plant_draw_seed":8412,"evaluation_seed":8112}
+  ],
+  "large_sparse_layout": {"distances":[3,5,7,9,11,13,15],"gate_count_formula":"6*d^2-4*d-1","controls_per_gate":30,"distance_15_expected_controls":38670}
+}

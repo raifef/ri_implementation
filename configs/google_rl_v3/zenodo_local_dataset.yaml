@@ -1,0 +1,27 @@
+{
+  "schema_version": "google-zenodo-local-dataset.v3",
+  "read_only": true,
+  "search_roots": [
+    "D:/Users/Raife/google_rl_reimplementation",
+    "D:/Users/Raife/DDriveDownloads"
+  ],
+  "selected_archive": "D:/Users/Raife/DDriveDownloads/google_reinforcement_learning_qec.zip",
+  "identity": {
+    "record_id": "18896801",
+    "doi": "10.5281/zenodo.18896801",
+    "version": "2.0.0",
+    "title": "Data for \"Reinforcement Learning Control of Quantum Error Correction\"",
+    "creator": "Google Quantum AI",
+    "archive_name": "google_reinforcement_learning_qec.zip",
+    "expected_bytes": 7786791716,
+    "expected_md5": "ca54323082fcd0e3671d5b90ce45d85c",
+    "observed_sha256": "39563ad104bcbec2e36907373b25d176cf7f2a2e3852d8390623223dadf96e76",
+    "record_url": "https://zenodo.org/records/18896801"
+  },
+  "checksum_policy": {
+    "archive": ["md5", "sha256"],
+    "members": "zip_crc32",
+    "cache": "artifacts/google_reproduction_v3/checksum_cache.json"
+  },
+  "source_mutation_allowed": false
+}

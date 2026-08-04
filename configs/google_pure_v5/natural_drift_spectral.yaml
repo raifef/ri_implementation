@@ -1,0 +1,34 @@
+{
+  "schema_version": "google-pure-v5-natural-drift-spectral.v1",
+  "frozen_before_controller_evaluation": true,
+  "horizon_epochs": 768,
+  "detectors": 12,
+  "controls": 24,
+  "curvature": 0.30,
+  "detector_floor": 0.055,
+  "logical_floor": 0.005,
+  "logical_gain": 1.45,
+  "sampling_interval_epochs": 1.0,
+  "welch_segment_length": 128,
+  "welch_overlap_fraction": 0.5,
+  "taper": "hann",
+  "detrend": "constant",
+  "low_frequency_band": [0.001, 0.012],
+  "mid_frequency_band": [0.012, 0.06],
+  "high_frequency_band": [0.06, 0.5],
+  "low_frequency_gain_db_band": [1.0, 7.0],
+  "families": [
+    {"id": "instrumental_a", "family": "slow_instrumental", "seed": 7301, "amplitude": 0.20, "affected_stride": 3},
+    {"id": "common_mode_a", "family": "smooth_common_mode", "seed": 7302, "amplitude": 0.18, "affected_stride": 1},
+    {"id": "multi_sine_a", "family": "bounded_multi_sine", "seed": 7303, "amplitude": 0.20, "affected_stride": 2},
+    {"id": "coloured_a", "family": "low_frequency_coloured", "seed": 7304, "amplitude": 0.17, "affected_stride": 2},
+    {"id": "multi_sine_b", "family": "bounded_multi_sine", "seed": 7305, "amplitude": 0.16, "affected_stride": 4},
+    {"id": "coloured_b", "family": "low_frequency_coloured", "seed": 7306, "amplitude": 0.15, "affected_stride": 3}
+  ],
+  "robustness": {
+    "segment_lengths": [96, 128, 192],
+    "tapers": ["hann", "boxcar"],
+    "low_band_upper_edges": [0.010, 0.012, 0.015],
+    "detrending_choices": ["constant", "linear"]
+  }
+}

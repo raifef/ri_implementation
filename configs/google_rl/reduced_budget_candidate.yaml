@@ -1,0 +1,37 @@
+{
+  "schema_version": "google-rl-config.v1",
+  "name": "reduced_budget_candidate",
+  "evidence_label": "experimental reduced acquisition pending matched Track-A equivalence",
+  "sampling": {
+    "candidates_per_epoch": 40,
+    "shots_per_candidate": 2048,
+    "qec_cycles_per_shot": 1,
+    "effective_cycles_per_candidate": 2048,
+    "candidate_design": "complete_antithetic_pairs",
+    "mean_evaluation_shots": 4096,
+    "mean_evaluation_period_epochs": 1
+  },
+  "policy": {
+    "initial_stddev_normalized": 0.18,
+    "mean_learning_rate": 0.55,
+    "log_stddev_learning_rate": 0.03,
+    "baseline_learning_rate": 0.25,
+    "entropy_weight": 0.0005,
+    "minimum_stddev_normalized": 0.025,
+    "maximum_stddev_normalized": 0.50,
+    "ppo_clip": 0.20,
+    "optimizer": "sgd",
+    "optimizer_steps": 1,
+    "gradient_clip": 5.0,
+    "replay_epochs": 1
+  },
+  "development_tuning": {
+    "seed": 15501,
+    "target": "matched optimizer settings; no independent tuning against certification seeds"
+  },
+  "safety": {
+    "absolute_bound_normalized": 1.0,
+    "candidate_slew_normalized": 0.45,
+    "mean_slew_normalized": 0.12
+  }
+}

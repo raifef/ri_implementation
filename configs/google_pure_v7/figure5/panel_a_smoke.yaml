@@ -1,0 +1,1 @@
+{"mode":"smoke","frequencies":[0.0033333333333333335,0.006666666666666667,0.013333333333333334],"entropy_coefficients":[0.0001,0.0004,0.0016],"epochs":12,"candidates":6,"cycles_per_candidate":128,"controls":6,"drift_amplitude":0.45}

@@ -1,0 +1,22 @@
+{
+  "blocking_reasons": [
+    "zero contour is not bracketed"
+  ],
+  "complete": true,
+  "experiment_family": "FIGURE5A_REAL_TIME_STEERING",
+  "final_evidence": false,
+  "metrics": {
+    "candidate_improvement_range": [
+      -1.4031765139492534,
+      -1.325131666202072
+    ],
+    "paper_critical_frequency": 0.006666666666666667,
+    "zero_contour_bracketed": false
+  },
+  "mode": "reference",
+  "protocol_hash": "48a1fa4fb1a538a87b2a36c2539e0685e173d99e440e3ea033a5ccf7095bf2e3",
+  "schema_version": "google-paper-validation.v1",
+  "smoke_cannot_certify": true,
+  "status": "SCIENTIFIC_VALIDATION_FAILED",
+  "valid": false
+}

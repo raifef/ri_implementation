@@ -1,0 +1,8 @@
+{
+  "schema_version": "sine-bandwidth-v6.1",
+  "frequencies_cycles_per_run": [1.0, 4.0, 12.0],
+  "labels": ["below_candidate_bandwidth", "near_candidate_bandwidth", "above_candidate_bandwidth"],
+  "fit_model": "first_order_low_pass_diagnostic_only",
+  "selection_metric": "mean_over_fixed_gain_and_phase_lag",
+  "frozen_before_evaluation": true
+}

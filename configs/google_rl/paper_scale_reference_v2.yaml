@@ -1,0 +1,34 @@
+{
+  "schema_version": "google-public-reference-config.v2",
+  "name": "paper_scale_reference_v2",
+  "evidence_layer": "open algorithmic reproduction on a declared paper-anchored surrogate",
+  "sampling": {
+    "candidates_per_epoch": 40,
+    "shots_per_candidate": 4000,
+    "qec_cycles_per_shot": 25,
+    "effective_cycles_per_candidate": 100000,
+    "candidate_design": "independent_diagonal_gaussian",
+    "mean_evaluation_shots": 200000,
+    "fixed_policy_re_evaluated": true,
+    "mean_evaluation_period_epochs": 5
+  },
+  "agent": {
+    "initial_stddev_normalized": 0.08,
+    "mean_learning_rate": 0.02,
+    "log_stddev_learning_rate": 0.003,
+    "baseline_learning_rate": 0.08,
+    "entropy_weight": 0.01,
+    "entropy_scale_mode": "mean_absolute_advantage",
+    "minimum_stddev_normalized": 0.008,
+    "maximum_stddev_normalized": 0.30,
+    "ppo_clip": 0.20,
+    "gradient_clip": 1.0,
+    "optimizer_steps": 4,
+    "replay_capacity_epochs": 4,
+    "replay_max_regime_age_epochs": 2,
+    "absolute_bound_normalized": 1.0
+  },
+  "development_seeds": [7901, 7902, 7903],
+  "untouched_certification_seeds": [8101, 8102, 8103, 8104, 8105, 8106, 8107, 8108, 8109, 8110, 8111, 8112],
+  "protected_prior_seeds": [5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010, 5011, 5012, 5013, 5014, 5015, 5016, 5017, 5018, 5019, 5020, 5021, 5022, 5023, 5024, 6101, 6102, 6103, 7101, 7102, 7103, 7104, 7105, 7106, 7107, 7108, 7109, 7110, 7111, 7112]
+}

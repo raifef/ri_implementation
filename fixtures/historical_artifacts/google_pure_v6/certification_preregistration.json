@@ -1,0 +1,40 @@
+{
+  "allowed_outcomes": [
+    "BENCHMARK_FAILURE",
+    "REPORTING_CONVENTION_FAILURE",
+    "UNIT_OR_NORMALIZATION_FAILURE",
+    "EXPLORATION_CALIBRATION_FAILURE",
+    "BANDWIDTH_MISMATCH",
+    "REPLAY_STALENESS",
+    "BASELINE_FAILURE",
+    "OBJECTIVE_TRANSCRIPTION_FAILURE",
+    "SYNTHETIC_TASK_NON_COMMENSURABILITY",
+    "GENUINE_CONTROLLER_FAILURE",
+    "PURE_GOOGLE_STYLE_SYNTHETIC_REPRODUCTION_CERTIFIED",
+    "PARTIAL_PURE_REPRODUCTION"
+  ],
+  "certification_seeds": [
+    12101,
+    12102,
+    12103,
+    12104,
+    12105,
+    12106,
+    12107,
+    12108,
+    12109,
+    12110,
+    12111,
+    12112
+  ],
+  "certification_seeds_consumed": false,
+  "development_scorecard_hash": "acf05cd4fc0be9bd9a5f2060e3e0147a76307d2a2cee8869680bd0ec6244d157",
+  "disclaimer": "This is an open synthetic reproduction of the published Google-style RL algorithm. Google’s proprietary controller code and hardware control dynamics were unavailable.",
+  "one_run_permitted": true,
+  "retired_development_exposed_seeds": [
+    10101
+  ],
+  "retired_seed_reason": "pre-delivery workflow-safety test; never eligible for held-out use",
+  "schema_version": "google-pure-v6-certification-preregistration.v1",
+  "status": "FROZEN"
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": "google-synthetic-v4-plant-priors.v1",
+  "frozen_before_controller_development": true,
+  "zenodo_constraints": {
+    "source_artifact": "artifacts/google_reproduction_v3/empirical_statistics_fit.json",
+    "detector_rate_mean": 0.07455404399353781,
+    "detector_rate_between_experiment_std": 0.02751095751477804,
+    "mean_absolute_off_diagonal_covariance_median": 0.0013530804085251586,
+    "overdispersion_median": 0.9633842091335447,
+    "effective_independent_sample_count_median": 2018.7009149825853,
+    "low_frequency_power_fraction_median": 0.10422254788115522,
+    "logical_error_per_cycle_quantiles": [0.0037892178213630666, 0.0053446425595650715, 0.007887841291265508]
+  },
+  "parameters": [
+    {"name":"detector_floor_mean","range":[0.045,0.105],"rationale":"spans released detector-rate cells around the v3 aggregate","role":"nuisance","sensitivity_role":"observation floor"},
+    {"name":"detector_floor_cv","range":[0.12,0.32],"rationale":"covers released marginal heterogeneity without fitting control outcomes","role":"nuisance","sensitivity_role":"detector weighting"},
+    {"name":"off_diagonal_covariance","range":[0.00045,0.0018],"rationale":"brackets the v3 median absolute off-diagonal covariance","role":"nuisance","sensitivity_role":"correlated measurement noise"},
+    {"name":"overdispersion","range":[0.88,1.10],"rationale":"brackets the v3 fit median while allowing modest misspecification","role":"nuisance","sensitivity_role":"effective sampling variance"},
+    {"name":"local_curvature","range":[0.025,0.070],"rationale":"broad positive locally quadratic response; public coefficients unavailable","role":"control","sensitivity_role":"policy-gradient signal"},
+    {"name":"asymmetry","range":[-0.006,0.006],"rationale":"weak cubic local departure from an exactly quadratic plant","role":"nuisance","sensitivity_role":"model robustness"},
+    {"name":"coupling","range":[0.0,0.012],"rationale":"weak neighbor coupling consistent with sparse local factors","role":"nuisance","sensitivity_role":"factor misspecification"},
+    {"name":"sensitivity_native_per_normalized","range":[0.75,1.25],"rationale":"dimensionless-normalization stress test; proprietary sensitivities unavailable","role":"control","sensitivity_role":"normalization"},
+    {"name":"drift_amplitude","range":[0.10,0.28],"rationale":"bounded local movement well inside the normalized control domain","role":"evaluation","sensitivity_role":"tracking difficulty"},
+    {"name":"drift_frequency_per_epoch","range":[0.0015,0.014],"rationale":"covers slow tracking through the public steering-transition scale","role":"evaluation","sensitivity_role":"tracking bandwidth"},
+    {"name":"step_amplitude","range":[0.16,0.34],"rationale":"bounded abrupt perturbation around the v2 paper-anchored value","role":"evaluation","sensitivity_role":"recovery transient"},
+    {"name":"spoil_severity","range":[0.30,0.90],"rationale":"covers moderate through severe normalized randomized recovery","role":"evaluation","sensitivity_role":"recovery difficulty"}
+  ],
+  "claim_boundary": "Zenodo constrains observation statistics only; all action-response and drift dynamics are synthetic."
+}

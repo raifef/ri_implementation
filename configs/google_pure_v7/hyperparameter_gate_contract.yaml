@@ -1,0 +1,19 @@
+{
+  "schema_version": "google-pure-v7-hyperparameter-gates.v1",
+  "hard_filters": {
+    "no_drift_stationarity_max_damage": 0.004,
+    "objective_and_units_valid": true,
+    "finite_gain_and_phase": true,
+    "slow_drift_suppression_min_exclusive": 1.0,
+    "slow_drift_ci_excludes_one": true,
+    "integrated_excess_ratio_max_exclusive": 1.0,
+    "natural_drift_suppression_min_exclusive": 0.0,
+    "candidate_damage_max": 0.004,
+    "clipping_fraction_max": 0.5,
+    "scaling_deterioration_max": 0.15,
+    "recovery_required": true
+  },
+  "selection_rule": "filter_all_hard_gates_then_rank_survivors_only",
+  "no_survivor_status": "NO_PASSING_CONFIGURATION",
+  "allowed_parameters": ["initial_scale", "minimum_scale", "maximum_scale", "entropy_coefficient", "scale_learning_rate", "mean_learning_rate", "replay_capacity_epochs", "baseline_coefficient", "ppo_clip", "update_passes", "optimizer"]
+}

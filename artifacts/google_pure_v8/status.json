@@ -1,0 +1,22 @@
+{
+  "artifact_hash": "9ddfc89009ede5ffce51c698323c6b16193b8f3f2f92634c285adcbd91eb49dc",
+  "artifacts": {
+    "baseline_freezing_audit": true,
+    "clipping_and_likelihood_audit": true,
+    "compact_fault_isolation_matrix": true,
+    "entropy_and_scale_plumbing_audit": true,
+    "exploration_floor_feasibility": true,
+    "figure5a_edr_identity_audit": true,
+    "figure5a_feasibility_decomposition": true,
+    "mathematical_contracts": true,
+    "native_unit_audit": true,
+    "ppo_update_lifecycle_audit": true,
+    "pre_repair_snapshot": true,
+    "repaired_controller_contract": true,
+    "root_cause_report": true,
+    "temporal_protocol_audit": true
+  },
+  "certification_seeds_consumed": false,
+  "complete": true,
+  "schema_version": "google-pure-v8-status.v1"
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "hyperparameter-study-v6.1",
+  "sequence": "one_factor_then_small_factorial",
+  "allowed_parameters": ["initial_scale", "scale_floor", "mean_learning_rate", "scale_learning_rate", "baseline_coefficient", "replay_capacity_epochs", "entropy_coefficient"],
+  "one_factor": {
+    "initial_scale": [0.05, 0.07, 0.1],
+    "mean_learning_rate": [0.02, 0.03, 0.04],
+    "replay_capacity_epochs": [0, 1]
+  },
+  "factorial": [
+    {"initial_scale": 0.05, "mean_learning_rate": 0.025, "replay_capacity_epochs": 0},
+    {"initial_scale": 0.07, "mean_learning_rate": 0.025, "replay_capacity_epochs": 0},
+    {"initial_scale": 0.07, "mean_learning_rate": 0.03, "replay_capacity_epochs": 1},
+    {"initial_scale": 0.1, "mean_learning_rate": 0.03, "replay_capacity_epochs": 0}
+  ],
+  "frozen_before_evaluation": true
+}

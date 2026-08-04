@@ -1,0 +1,7 @@
+{
+  "candidates_per_epoch": 40,
+  "effective_cycles_per_candidate": 100000,
+  "epochs": 4000,
+  "controls": 25,
+  "status": "reference_only_not_automatically_executed"
+}

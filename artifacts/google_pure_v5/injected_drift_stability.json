@@ -1,0 +1,314 @@
+{
+  "accounting": {
+    "candidate_acquisition_cycles": 8640000000,
+    "complete_policy_candidates": 86400,
+    "effective_cycles_per_candidate": 100000,
+    "epochs": 2160,
+    "fixed_policy_diagnostic_cycles": 216000000,
+    "logical_evaluation_cycles": 864000000,
+    "mean_policy_diagnostic_cycles": 216000000
+  },
+  "aggregate": {
+    "mean_ler_improvement_95_percent_interval_across_scenarios": [
+      0.005173231151670235,
+      0.18429549187628935
+    ],
+    "median_control_only_stability_ratio": 0.973744458448387,
+    "median_relative_mean_ler_improvement": 0.020195305904267866,
+    "median_step_response_epochs": 81.67554845362952,
+    "stability_ratio_95_percent_interval_across_scenarios": [
+      2.09569279692608e-15,
+      1.1618732070914515
+    ],
+    "step_response_range_epochs": [
+      79.38199318252715,
+      83.96910372473188
+    ]
+  },
+  "certification_seeds_consumed": false,
+  "checks": {
+    "all_primary_scenarios_correct_direction": false,
+    "all_profiles_present": true,
+    "exploration_damage_separate": true,
+    "four_policy_classes_separate": true,
+    "material_mean_ler_improvement": false,
+    "median_stability_source_band": false,
+    "multiple_locations": true,
+    "step_response_source_band": true
+  },
+  "decoder_steering_included": false,
+  "disclaimer": "This is an open synthetic reproduction of the published Google-style RL algorithm. Google’s proprietary controller code and hardware control dynamics were unavailable.",
+  "distinct_evidence_statement": "The injected-drift stability statistic is derived from deliberate synthetic interventions and is not the same experiment as the natural-drift spectral analysis.",
+  "primary_metric": "control-only LER standard-deviation ratio",
+  "public_anchor_scope": "approximately 2.4x control steering only; excludes decoder steering",
+  "raw_trace_hashes": [
+    "f2cee3758277f13e8cfa255a3f7f37d934172cd251537327cfcd92b77437f35e",
+    "93bff57d8c6f40e7b91ce17d3b6c5a3e39373c3be33be25728c68edab63b898d",
+    "a63f3996ede44f21dbdc8fe3ee3b277ccc057c1a122b9bd6b5a27170f6778e8b",
+    "67d5f77b8fda6f346f0e15ffa3dba8098d5b692d7ace49cb77ba33fe05711529",
+    "2e7ba8c5f0b1a3acdd83f72bdca42793fce549e5dc15339565b2369685b2e727",
+    "3df7bc78aa288c390d58dfa6cc4757c4fa34957c13139df672a78e18388276ba"
+  ],
+  "scenarios": [
+    {
+      "affected_controls": [
+        0,
+        1
+      ],
+      "category": "CZ coupling strength",
+      "control_only_stability_ratio": 0.9736189972891018,
+      "exploration_damage": 0.008459385273331368,
+      "final_ler": {
+        "fixed_policy": 0.0066923964325584185,
+        "learned_mean": 0.005014199208662382,
+        "oracle_optimum": 0.005000000000000001,
+        "stochastic_candidates": 0.013461639087657648
+      },
+      "initial_ler": {
+        "fixed_policy": 0.005,
+        "learned_mean": 0.005002299056053964,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.013678099492466922
+      },
+      "ler_standard_deviation": {
+        "fixed_policy": 0.00039879782455826476,
+        "learned_mean": 0.0004096035776506604,
+        "oracle_optimum": 8.686400905435448e-19,
+        "stochastic_candidates": 0.0006183089025716502
+      },
+      "location": 0,
+      "mean_ler": {
+        "fixed_policy": 0.006592843701231451,
+        "learned_mean": 0.005296852859284141,
+        "oracle_optimum": 0.004999999999999999,
+        "stochastic_candidates": 0.01375623813261551
+      },
+      "profile": "step",
+      "raw_trace_hash": "f2cee3758277f13e8cfa255a3f7f37d934172cd251537327cfcd92b77437f35e",
+      "relative_detector_rate_improvement": 0.015845451012484756,
+      "relative_mean_ler_improvement": 0.19657539305917976,
+      "scenario_id": "step_cz_l0",
+      "step_response": {
+        "asymptotic_error": 0.018850455527532152,
+        "characteristic_time_epochs": 83.96910372473188,
+        "fit_r_squared": 0.9918995273878881,
+        "fitted_tail_start_epoch": 43,
+        "one_over_e_crossing_epochs": 100.0,
+        "onset_epoch": 40,
+        "response_amplitude": 0.20424123276163308
+      },
+      "stochastic_operational_stability_ratio": 0.644981534148381
+    },
+    {
+      "affected_controls": [
+        11
+      ],
+      "category": "XY pulse amplitude",
+      "control_only_stability_ratio": 0.9738699196076722,
+      "exploration_damage": 0.008481173536462387,
+      "final_ler": {
+        "fixed_policy": 0.005727783092906625,
+        "learned_mean": 0.00500814629447869,
+        "oracle_optimum": 0.005000000000000001,
+        "stochastic_candidates": 0.013400214151471353
+      },
+      "initial_ler": {
+        "fixed_policy": 0.005,
+        "learned_mean": 0.005002273628251134,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.013447625463480361
+      },
+      "ler_standard_deviation": {
+        "fixed_policy": 0.00017149546561185462,
+        "learned_mean": 0.00017609689154475817,
+        "oracle_optimum": 8.686400905435448e-19,
+        "stochastic_candidates": 0.0004600356453265852
+      },
+      "location": 5,
+      "mean_ler": {
+        "fixed_policy": 0.005684972322735649,
+        "learned_mean": 0.005125933840668616,
+        "oracle_optimum": 0.004999999999999999,
+        "stochastic_candidates": 0.013607107377131002
+      },
+      "profile": "step",
+      "raw_trace_hash": "93bff57d8c6f40e7b91ce17d3b6c5a3e39373c3be33be25728c68edab63b898d",
+      "relative_detector_rate_improvement": 0.006916259051078225,
+      "relative_mean_ler_improvement": 0.0983361835960565,
+      "scenario_id": "step_xyamp_l5",
+      "step_response": {
+        "asymptotic_error": 0.017266871362106098,
+        "characteristic_time_epochs": 79.38199318252715,
+        "fit_r_squared": 0.9910311125582886,
+        "fitted_tail_start_epoch": 43,
+        "one_over_e_crossing_epochs": 101.0,
+        "onset_epoch": 40,
+        "response_amplitude": 0.18501352805386417
+      },
+      "stochastic_operational_stability_ratio": 0.37278734235932476
+    },
+    {
+      "affected_controls": [
+        4
+      ],
+      "category": "XY pulse frequency",
+      "control_only_stability_ratio": 1.170383578935946,
+      "exploration_damage": 0.008288403594477328,
+      "final_ler": {
+        "fixed_policy": 0.005223201490021951,
+        "learned_mean": 0.005454233511946426,
+        "oracle_optimum": 0.005000000000000001,
+        "stochastic_candidates": 0.013609041960616127
+      },
+      "initial_ler": {
+        "fixed_policy": 0.005,
+        "learned_mean": 0.005001938194593739,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.013822276706989364
+      },
+      "ler_standard_deviation": {
+        "fixed_policy": 0.0003007658931010447,
+        "learned_mean": 0.0002569806160254623,
+        "oracle_optimum": 0.0,
+        "stochastic_candidates": 0.0004451731571212158
+      },
+      "location": 2,
+      "mean_ler": {
+        "fixed_policy": 0.00539287508052193,
+        "learned_mean": 0.005325285410427351,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.013613689004904679
+      },
+      "profile": "sinusoidal",
+      "raw_trace_hash": "a63f3996ede44f21dbdc8fe3ee3b277ccc057c1a122b9bd6b5a27170f6778e8b",
+      "relative_detector_rate_improvement": 0.0008422821372511003,
+      "relative_mean_ler_improvement": 0.012533142170991668,
+      "scenario_id": "sine_xyfreq_l2",
+      "step_response": null,
+      "stochastic_operational_stability_ratio": 0.6756155178941964
+    },
+    {
+      "affected_controls": [
+        16,
+        17
+      ],
+      "category": "CZ coupling strength",
+      "control_only_stability_ratio": 1.102300604179989,
+      "exploration_damage": 0.008557445339773435,
+      "final_ler": {
+        "fixed_policy": 0.005234080680458738,
+        "learned_mean": 0.005518545836749035,
+        "oracle_optimum": 0.005000000000000001,
+        "stochastic_candidates": 0.013988841416892123
+      },
+      "initial_ler": {
+        "fixed_policy": 0.005,
+        "learned_mean": 0.005002001357068282,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.014015364092810192
+      },
+      "ler_standard_deviation": {
+        "fixed_policy": 0.0004397647324231528,
+        "learned_mean": 0.0003989517294606743,
+        "oracle_optimum": 0.0,
+        "stochastic_candidates": 0.0005504681632323933
+      },
+      "location": 8,
+      "mean_ler": {
+        "fixed_policy": 0.005542908381718094,
+        "learned_mean": 0.0055178795191865755,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.014075324858960011
+      },
+      "profile": "sinusoidal",
+      "raw_trace_hash": "67d5f77b8fda6f346f0e15ffa3dba8098d5b692d7ace49cb77ba33fe05711529",
+      "relative_detector_rate_improvement": 0.0003089321759898831,
+      "relative_mean_ler_improvement": 0.004515474694488867,
+      "scenario_id": "sine_cz_l8",
+      "step_response": null,
+      "stochastic_operational_stability_ratio": 0.7988922190173886
+    },
+    {
+      "affected_controls": [
+        7
+      ],
+      "category": "XY pulse amplitude",
+      "control_only_stability_ratio": 1.978765729010394e-15,
+      "exploration_damage": 0.008357140942547813,
+      "final_ler": {
+        "fixed_policy": 0.005574586491292189,
+        "learned_mean": 0.005156752084963436,
+        "oracle_optimum": 0.005000000000000001,
+        "stochastic_candidates": 0.013423807977819955
+      },
+      "initial_ler": {
+        "fixed_policy": 0.005,
+        "learned_mean": 0.0050022467640241375,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.013582817396113967
+      },
+      "ler_standard_deviation": {
+        "fixed_policy": 8.689724389820291e-19,
+        "learned_mean": 0.0004391487209638573,
+        "oracle_optimum": 0.0,
+        "stochastic_candidates": 0.0005967557121061888
+      },
+      "location": 3,
+      "mean_ler": {
+        "fixed_policy": 0.005574586491292188,
+        "learned_mean": 0.005419292617369152,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.013776433559916966
+      },
+      "profile": "stroboscopic",
+      "raw_trace_hash": "2e7ba8c5f0b1a3acdd83f72bdca42793fce549e5dc15339565b2369685b2e727",
+      "relative_detector_rate_improvement": 0.0019313765857042699,
+      "relative_mean_ler_improvement": 0.027857469637544065,
+      "scenario_id": "strobe_xyamp_l3",
+      "step_response": null,
+      "stochastic_operational_stability_ratio": 1.4561610745460299e-15
+    },
+    {
+      "affected_controls": [
+        20
+      ],
+      "category": "XY pulse frequency",
+      "control_only_stability_ratio": 2.914182272335879e-15,
+      "exploration_damage": 0.008676904443381222,
+      "final_ler": {
+        "fixed_policy": 0.00549580401870166,
+        "learned_mean": 0.005500855001165754,
+        "oracle_optimum": 0.005000000000000001,
+        "stochastic_candidates": 0.014210449458813484
+      },
+      "initial_ler": {
+        "fixed_policy": 0.005,
+        "learned_mean": 0.005001986918364022,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.01309538413611119
+      },
+      "ler_standard_deviation": {
+        "fixed_policy": 8.689724389820291e-19,
+        "learned_mean": 0.0002981874013959667,
+        "oracle_optimum": 0.0,
+        "stochastic_candidates": 0.0005347234764982093
+      },
+      "location": 10,
+      "mean_ler": {
+        "fixed_policy": 0.005495804018701659,
+        "learned_mean": 0.005442068650083707,
+        "oracle_optimum": 0.005,
+        "stochastic_candidates": 0.014118973093464928
+      },
+      "profile": "stroboscopic",
+      "raw_trace_hash": "3df7bc78aa288c390d58dfa6cc4757c4fa34957c13139df672a78e18388276ba",
+      "relative_detector_rate_improvement": 0.0006731171648116225,
+      "relative_mean_ler_improvement": 0.009777526351939814,
+      "scenario_id": "strobe_xyfreq_l10",
+      "step_response": null,
+      "stochastic_operational_stability_ratio": 1.6250875025587905e-15
+    }
+  ],
+  "schema_version": "google-pure-v5-injected-drift.v1",
+  "status": "FAIL"
+}

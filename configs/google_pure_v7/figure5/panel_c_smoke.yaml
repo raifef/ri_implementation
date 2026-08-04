@@ -1,0 +1,1 @@
+{"mode":"smoke","distances":[3,5],"parameters_per_gate":[1,10,30],"epochs":20,"local_fit_min_distance":0.0001,"local_fit_max_distance":0.7}

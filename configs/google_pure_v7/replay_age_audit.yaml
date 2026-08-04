@@ -1,0 +1,8 @@
+{
+  "schema_version": "google-pure-v7-replay-age.v1",
+  "replay_horizons_epochs": [0, 1, 2, 4, 8],
+  "scenarios": ["static", "long_step", "slow_sine", "near_bandwidth_sine"],
+  "alignment_metric": "cosine_estimated_gradient_vs_current_true_gradient",
+  "bias_metric": "norm_expected_estimated_gradient_minus_current_true_gradient",
+  "frozen_before_evaluation": true
+}

@@ -1,0 +1,27 @@
+{
+  "certification_seeds_consumed": false,
+  "disclaimer": "This is an open synthetic reproduction of the published Google-style RL algorithm. Google’s proprietary controller code and hardware control dynamics were unavailable.",
+  "median_recovery_epoch": 1254.0,
+  "rows": [
+    {
+      "initial_excess": 9.953292341563155e-05,
+      "recovery_epoch_after_onset": 1038,
+      "severity": 0.25,
+      "target_excess": 9.953292341563156e-06
+    },
+    {
+      "initial_excess": 0.0002866241016367937,
+      "recovery_epoch_after_onset": 1254,
+      "severity": 0.45,
+      "target_excess": 2.866241016367937e-05
+    },
+    {
+      "initial_excess": 0.0006188588848667891,
+      "recovery_epoch_after_onset": 1267,
+      "severity": 0.65,
+      "target_excess": 6.188588848667892e-05
+    }
+  ],
+  "schema_version": "google-pure-v6-recovery-retention.v1",
+  "status": "PASS"
+}

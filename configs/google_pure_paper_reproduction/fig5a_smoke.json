@@ -1,0 +1,1 @@
+{"epochs":8,"candidates":8,"cycles_per_candidate":1000,"frequencies":[0.0033333333333333335,0.006666666666666667,0.013333333333333334],"entropy_coefficients":[0.0001,0.0004,0.001],"seeds":[13101,13102]}

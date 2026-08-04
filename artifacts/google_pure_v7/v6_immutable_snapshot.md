@@ -1,0 +1,115 @@
+# v6 Immutable Snapshot
+
+This is an open synthetic reproduction of the published Google-style RL algorithm. Google’s proprietary controller code and hardware control dynamics were unavailable.
+
+- **schema_version:** `google-pure-v7-v6-immutable-snapshot.v1`
+- **files_hashed:** `33`
+- **file_sha256**
+  - **artifacts/google_pure_v6/certification_preregistration.json:** `431dbb912cf05cb39a8d898a6137f7d7e1f1c16b66ad870bbb4f0da27637cbff`
+  - **artifacts/google_pure_v6/development_scorecard.json:** `e3b143cbdcb4179215b3b44cbadcc2ed63260a1df30030965249522243965c21`
+  - **artifacts/google_pure_v6/natural_drift_retention.json:** `2546457b8fa3634d2af24fcdfb625957c087555c4e6f6742980d7f61f30d4952`
+  - **artifacts/google_pure_v6/recovery_retention.json:** `f10899919e66b6ce6f34304fb096008413c211b1e0a767317549e91e5c1ee18a`
+  - **artifacts/google_pure_v6/repaired_drift_protocol.json:** `0e0acb831c43bfbfd5b984f5eba2a9b11a8a9ad8988566dbd9af5a738ee0778f`
+  - **artifacts/google_pure_v6/repaired_drift_protocol.md:** `8a942600f86031f3391bcf3919b4b8551abf1d52ae9c753bbbef4d90f59bb336`
+  - **artifacts/google_pure_v6/scaling_retention.json:** `0abc0fb41bda859541599a3ae10ab8159bafa36b7c9f77bb38cbab6f0fd469a7`
+  - **artifacts/google_pure_v6/v5_immutable_snapshot.json:** `dd4117b2e98e9d40380020384494c00eb19222e205789ee566f3b622ae2e3d7d`
+  - **configs/google_pure_v6/exploration_calibration.yaml:** `3fd440cbde1553c87332c21225b4924522d653dd2a30f6aad39c9e7acf964eaa`
+  - **configs/google_pure_v6/hyperparameter_study.yaml:** `52a8969d5f41f7b3ecdbc764466d4efa41842476440fb8c9472b56d01e053f5f`
+  - **configs/google_pure_v6/paper_scale_reference.yaml:** `e0488e30c7c3f1edd50ff404a5d06a72ad2c53f0d73e350d3b6bcbf12be5fe98`
+  - **configs/google_pure_v6/repaired_drift_protocol.yaml:** `6007bd284932e89bcf38f332371ca68b64cae292b57bc4b31e414598712ecd5d`
+  - **configs/google_pure_v6/sine_bandwidth.yaml:** `998c9c4ee8ada95c9993e1cd6d9bac0964e77a1def0bfc4131eac5da07632e90`
+  - **configs/google_pure_v6/source_unspecified_choices.yaml:** `3fc768d46d227400d95d1868b506dfddfe126befc65a68d8b88fa606ba191a58`
+  - **src/google_rl_reimplementation/google_pure_v6/__init__.py:** `c50ec4c9f7c806b8419a866c0c2f1c3233611014e4dfc1687b63751fccfecd8d`
+  - **src/google_rl_reimplementation/google_pure_v6/audits.py:** `5e72f0a39b446f85ebf3b852987c04a2e53e26b20df507868cdf2446e72ecd67`
+  - **src/google_rl_reimplementation/google_pure_v6/baseline.py:** `7742f85639f776314f8adee1c0cd51d92745778d94c92f488f4b808ea23e501f`
+  - **src/google_rl_reimplementation/google_pure_v6/cli.py:** `7412f101bc13069479c1b11bf0579ca5ae274c9e62d4d4101fd5deef4c3795dc`
+  - **src/google_rl_reimplementation/google_pure_v6/config.py:** `5e9d9cb414a174bb7151be2a92257cb4b059375438d3bc00b886d2278a29e33e`
+  - **src/google_rl_reimplementation/google_pure_v6/experiments.py:** `de62ca5f7d5e6794701ee47b616397b2dcb25a1c44777c3421377921f14a5097`
+  - **src/google_rl_reimplementation/google_pure_v6/factor_graph.py:** `309ba26b933f44b5060171309734d22ab0fee204cd99122b67b8853145c1328e`
+  - **src/google_rl_reimplementation/google_pure_v6/lifecycle.py:** `f0119d8b574163a44669924096c22549dbcc35e6daa6b2b86cfa08f49ca8bb0a`
+  - **src/google_rl_reimplementation/google_pure_v6/metrics.py:** `cba9767b107338bb298bf934e67bbeee7bf40c6418a0a26867ac5677c07a830a`
+  - **src/google_rl_reimplementation/google_pure_v6/plant.py:** `4b57b1c4def1fef2f3a14e62e5db2853807de337cee58a4ea8ffdec43a8a78c6`
+  - **src/google_rl_reimplementation/google_pure_v6/policy.py:** `a60f7af734573e22d233dc0aca1a267b12561e9435b2cf0dc79840aa94969178`
+  - **src/google_rl_reimplementation/google_pure_v6/reference_agent.py:** `b1c95178e0f845935d1831d98e87b3a9c32313b2399bbb0c7973d40dae3e54bb`
+  - **src/google_rl_reimplementation/google_pure_v6/replay.py:** `19d5ed61a1a494400db64e0952e186730965a85eb0c842e34af09d166c2d95b4`
+  - **src/google_rl_reimplementation/google_pure_v6/reporting.py:** `085eb0c8e096def4a3bae84bf9c08f64d83161a3b14e7c074745a8764a87ef08`
+  - **src/google_rl_reimplementation/google_pure_v6/snapshot.py:** `a16fd1c020df100a6cefb4621ef4afa18d65b9b76113e3d9b75f1454cef06da6`
+  - **src/google_rl_reimplementation/google_pure_v6/studies.py:** `1ec9a43bbea906c951f0fba77b15a2c20695ab90ea2a4bcd2f23b45ebfb7f34f`
+  - **src/google_rl_reimplementation/google_pure_v6/units.py:** `a06c9c100943aec06b0b99afcca275646952a811c96609cdd83e6a056dab480a`
+  - **src/google_rl_reimplementation/google_pure_v6/update.py:** `3f2aaf5145065a7f9c9f60090c34414238eae8abd218c35794081deab23dd5df`
+  - **tests/test_google_pure_v6.py:** `074f189040054826ab080e91f166cbae36c819513f19fe65cdb23df619b6b1a9`
+- **surface_sha256:** `58add9e40d543c924cd65047283f65374073b6182277a152c86d641a1ed2f5ca`
+- **development_scorecard**
+  - **all_development_gates_pass:** `True`
+  - **certification_blocked:** `False`
+  - **certification_ready:** `True`
+  - **certification_seeds_consumed:** `False`
+  - **disclaimer:** `This is an open synthetic reproduction of the published Google-style RL algorithm. Google’s proprietary controller code and hardware control dynamics were unavailable.`
+  - **gates**
+    - **baseline_audit:** `True`
+    - **candidate_damage_audit:** `True`
+    - **entropy_normalization_audit:** `True`
+    - **exploration_calibration:** `True`
+    - **gaussian_score_audit:** `True`
+    - **hyperparameter_study:** `True`
+    - **local_ratio_audit:** `True`
+    - **metric_contract:** `True`
+    - **natural_drift_retention:** `True`
+    - **objective_aggregation_audit:** `True`
+    - **ppo_clipping_audit:** `True`
+    - **quadratic_gradient_validation:** `True`
+    - **recovery_retention:** `True`
+    - **repaired_drift_protocol:** `True`
+    - **repaired_drift_unchanged:** `True`
+    - **replay_audit:** `True`
+    - **scaling_retention:** `True`
+    - **sine_bandwidth:** `True`
+    - **source_compliance_map:** `True`
+    - **static_validation:** `True`
+    - **unit_normalization_audit:** `True`
+    - **v5_immutable_snapshot:** `True`
+  - **missing_artifacts**
+  - **outcome_class:** `PARTIAL_PURE_REPRODUCTION`
+  - **outcome_in_frozen_hierarchy:** `True`
+  - **schema_version:** `google-pure-v6-development-scorecard.v1`
+  - **status:** `PASS`
+- **development_scorecard_sha256:** `e3b143cbdcb4179215b3b44cbadcc2ed63260a1df30030965249522243965c21`
+- **certification_preregistration_sha256:** `431dbb912cf05cb39a8d898a6137f7d7e1f1c16b66ad870bbb4f0da27637cbff`
+- **headline**
+  - **outcome:** `PARTIAL_PURE_REPRODUCTION`
+  - **v5_files_hashed:** `54`
+  - **natural_drift_median_suppression_db:** `0.20255269400706372`
+  - **scaling_relative_deterioration:** `0.008531970746573636`
+  - **median_90_percent_recovery_latency_post_step_epochs:** `1254.0`
+  - **v5_v6_test_count:** `35`
+- **expected_headline**
+  - **outcome:** `PARTIAL_PURE_REPRODUCTION`
+  - **v5_files_hashed:** `54`
+  - **natural_drift_median_suppression_db:** `0.20255269400706372`
+  - **scaling_relative_deterioration:** `0.008531970746573636`
+  - **median_90_percent_recovery_latency_post_step_epochs:** `1254.0`
+  - **v5_v6_test_count:** `35`
+- **exact_headline_reproduction:** `True`
+- **active_certification_seeds**
+  - `12101`
+  - `12102`
+  - `12103`
+  - `12104`
+  - `12105`
+  - `12106`
+  - `12107`
+  - `12108`
+  - `12109`
+  - `12110`
+  - `12111`
+  - `12112`
+- **active_certification_seed_outputs_absent:** `True`
+- **active_certification_seeds_unused:** `True`
+- **active_seed_set_retained_exactly:** `True`
+- **retired_seeds**
+  - `10101`
+- **retired_seed_state_preserved:** `True`
+- **v6_runtime_modified:** `False`
+- **certification_seeds_consumed:** `False`
+- **status:** `PASS`
+- **disclaimer:** `This is an open synthetic reproduction of the published Google-style RL algorithm. Google’s proprietary controller code and hardware control dynamics were unavailable.`

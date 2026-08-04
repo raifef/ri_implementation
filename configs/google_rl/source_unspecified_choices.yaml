@@ -1,0 +1,69 @@
+{
+  "schema_version": "google-public-source-unspecified.v1",
+  "rule": "Only development seeds may select among candidates; certification seeds remain unopened.",
+  "choices": [
+    {
+      "name": "mean_learning_rate",
+      "source_status": "Supplement says shallow hyperparameters were manually tuned; numerical value unavailable.",
+      "candidate_values": [0.01, 0.02, 0.035],
+      "rationale": "Dimensionless normalized-control update; bounded to avoid one-epoch saturation.",
+      "selection_method": "mechanism-level convergence and overshoot on seeds 7901-7903",
+      "frozen_final_value": 0.02,
+      "sensitivity_result": "development-only sweep is recorded in development_anchor_scorecard.json; selected jointly with four optimizer passes to keep the effective update bounded"
+    },
+    {
+      "name": "initial_stddev_normalized",
+      "source_status": "Initial covariance is not numerically disclosed.",
+      "candidate_values": [0.05, 0.08, 0.12],
+      "rationale": "Explore within frozen sensitivity units without approaching hard bounds.",
+      "selection_method": "gradient signal-to-noise and exploration-damage ordering on development seeds",
+      "frozen_final_value": 0.08,
+      "sensitivity_result": "development-only values 0.05, 0.08, and 0.12 are recorded in development_anchor_scorecard.json; 0.08 retained as the interior value"
+    },
+    {
+      "name": "ppo_optimizer_passes_and_replay",
+      "source_status": "The supplement specifies old-policy ratios, clipping, and replay but does not publish the optimizer-pass count or compatible-replay horizon.",
+      "candidate_values": [{"optimizer_steps": 1, "replay_age": 0}, {"optimizer_steps": 4, "replay_age": 2}],
+      "rationale": "One on-policy pass makes every ratio exactly one; four passes exercise clipping while two same-regime epochs bound nonstationarity.",
+      "selection_method": "fault diagnostic plus development-only convergence; incompatible regimes always rejected",
+      "frozen_final_value": {"optimizer_steps": 4, "replay_age": 2},
+      "sensitivity_result": "one-pass diagnostic confirmed a degenerate ratio of one; four-pass same-regime implementation retained and covered by regression tests"
+    },
+    {
+      "name": "entropy_scale_mode",
+      "source_status": "Relative weights in the public total loss are described as shallow tuned hyperparameters but are not numerically disclosed.",
+      "candidate_values": ["absolute", "mean_absolute_advantage"],
+      "rationale": "Detector objectives are probabilities; scaling entropy by their advantage magnitude keeps the exploration coefficient dimensionless.",
+      "selection_method": "mechanism diagnostic on development data; all 0.001/0.01/0.1 regimes remain reported",
+      "frozen_final_value": "mean_absolute_advantage",
+      "sensitivity_result": "absolute 0.01 entropy dominated the measured policy-scale gradient; relative scaling retained before certification"
+    },
+    {
+      "name": "entropy_weight",
+      "source_status": "The supplement discloses qualitative shallow tuning but not the numerical coefficient.",
+      "candidate_values": [0.001, 0.01, 0.1],
+      "rationale": "Matches the three exploration regimes used in the paper simulation.",
+      "selection_method": "retain all three for the phase diagram; 0.01 is the preregistered balanced setting",
+      "frozen_final_value": 0.01,
+      "sensitivity_result": "all three values are reported; no certification-seed selection"
+    },
+    {
+      "name": "quadratic_detector_weight_distribution",
+      "source_status": "The simulation form is public but the Willow control-by-control coefficients are proprietary.",
+      "candidate_values": ["frozen_uniform_0.045_0.075"],
+      "rationale": "Positive monotone local curvature with detector probabilities in a validated range.",
+      "selection_method": "surrogate-development sanity tests only; never controller outcomes",
+      "frozen_final_value": "frozen_uniform_0.045_0.075",
+      "sensitivity_result": "plant coefficient is frozen, not tuned to anchor agreement"
+    },
+    {
+      "name": "optimizer",
+      "source_status": "Optimizer implementation and schedule are not publicly enumerated.",
+      "candidate_values": ["source-transparent clipped SGD"],
+      "rationale": "No hidden optimizer state; directly testable implementation of Supplement Eqs. 18-22.",
+      "selection_method": "not selected on performance",
+      "frozen_final_value": "source-transparent clipped SGD",
+      "sensitivity_result": "single declared implementation; a hardware-code equivalence claim is prohibited"
+    }
+  ]
+}

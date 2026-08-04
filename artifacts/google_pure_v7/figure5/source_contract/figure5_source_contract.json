@@ -1,0 +1,178 @@
+{
+  "article_doi": "10.1038/s41586-026-10759-2",
+  "article_url": "https://www.nature.com/articles/s41586-026-10759-2",
+  "code_availability": "PROPRIETARY_NOT_PUBLIC",
+  "fields": [
+    {
+      "field": "5a.question",
+      "source": "main Fig. 5a; SI VI.A",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": "When does aggregate sampled-candidate steering beat a fixed policy?"
+    },
+    {
+      "field": "5a.axes",
+      "source": "main Fig. 5a; SI Fig. S8c",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": {
+        "colour": "normalized stochastic-policy improvement",
+        "x": "drift frequency (epochs^-1)",
+        "y": "entropy regularization"
+      }
+    },
+    {
+      "field": "5a.normalization",
+      "source": "SI VI.A",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": "(N_stochastic-N_fixed)/(N_optimal-N_fixed)"
+    },
+    {
+      "field": "5a.budget",
+      "source": "SI VI.A",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": {
+        "candidates": 50,
+        "cycles_per_candidate": 36000,
+        "epochs": 1000,
+        "total_cycles": 1800000000
+      }
+    },
+    {
+      "field": "5a.frequency_anchor",
+      "source": "main text and SI VI.A",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": 0.006666666666666667
+    },
+    {
+      "field": "5a.exact_frequency_grid",
+      "source": "public source does not enumerate the grid",
+      "status": "SYNTHETIC_REPRODUCTION_CHOICE",
+      "value": [
+        0.0005,
+        0.001,
+        0.002,
+        0.0033333333333333335,
+        0.006666666666666667,
+        0.013333333333333334,
+        0.02,
+        0.05,
+        0.1
+      ]
+    },
+    {
+      "field": "5a.exact_entropy_grid",
+      "source": "the public source illustrates values but does not publish the Fig. 5a grid",
+      "status": "SYNTHETIC_REPRODUCTION_CHOICE",
+      "value": [
+        0.0,
+        0.0001,
+        0.0002,
+        0.0004,
+        0.0008,
+        0.0016
+      ]
+    },
+    {
+      "field": "5b.question",
+      "source": "main Fig. 5b-c; SI VI.B",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": "Does sparse RL convergence degrade with code distance?"
+    },
+    {
+      "field": "5b.distances",
+      "source": "SI VI.B",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": [
+        3,
+        5,
+        7,
+        9,
+        11,
+        13,
+        15
+      ]
+    },
+    {
+      "field": "5b.memory_cycles",
+      "source": "SI VI.B",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": 10
+    },
+    {
+      "field": "5b.control_count",
+      "source": "SI Eq. 7",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": "[(2d^2-1)+(4d^2-4d)]P"
+    },
+    {
+      "field": "5b.d15_p30_controls",
+      "source": "SI Eq. 7 and Table I",
+      "status": "DERIVED_FROM_EXPLICIT_SOURCE",
+      "value": 38670
+    },
+    {
+      "field": "5b.irreducible_floor",
+      "source": "main Fig. 5b and SI VI.B",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": "control-independent physical errors define Lambda*"
+    },
+    {
+      "field": "5b.exact_candidate_budget",
+      "source": "SI VI.B does not enumerate candidates/cycles/epochs for the scaling run",
+      "status": "NOT_PUBLICLY_SPECIFIED",
+      "value": null
+    },
+    {
+      "field": "5b.proprietary_simulator",
+      "source": "main Code availability",
+      "status": "NOT_PUBLICLY_SPECIFIED",
+      "value": "unavailable"
+    },
+    {
+      "field": "5c.axes",
+      "source": "main Fig. 5c caption; SI Eq. 8",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": {
+        "x": "1-Lambda/Lambda*",
+        "y": "1e2 d_t Lambda/Lambda*"
+      }
+    },
+    {
+      "field": "5c.parameters_per_gate",
+      "source": "main Fig. 5c",
+      "status": "EXPLICITLY_SPECIFIED",
+      "value": [
+        1,
+        10,
+        30
+      ]
+    },
+    {
+      "field": "5c.fit",
+      "source": "SI Eq. 8",
+      "status": "DERIVED_FROM_EXPLICIT_SOURCE",
+      "value": "origin-constrained local linear fit; gamma slope"
+    },
+    {
+      "field": "5c.derivative_estimator_and_fit_window",
+      "source": "public source states point estimates and linear fits but not numerical estimator details",
+      "status": "SYNTHETIC_REPRODUCTION_CHOICE",
+      "value": "finite difference with declared local window"
+    },
+    {
+      "field": "shared.seed_cohorts",
+      "source": "public simulation seeds are not specified",
+      "status": "SYNTHETIC_REPRODUCTION_CHOICE",
+      "value": "repository-held independent development blocks"
+    },
+    {
+      "field": "shared.synthetic_plant",
+      "source": "Google simulator/code and full hyperparameters are proprietary",
+      "status": "SYNTHETIC_REPRODUCTION_CHOICE",
+      "value": "repository quadratic detector surrogate using resolved v7 pure controller"
+    }
+  ],
+  "literal_reproduction_possible": false,
+  "schema_version": "google-pure-v7-figure5-source-contract.v1",
+  "source_data_doi": "10.5281/zenodo.17566521",
+  "supplement_url": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41586-026-10759-2/MediaObjects/41586_2026_10759_MOESM1_ESM.pdf"
+}

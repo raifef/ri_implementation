@@ -1,0 +1,74 @@
+{
+  "certification_seeds_consumed": false,
+  "control_decoder_metrics_merged": false,
+  "experiment_family": "PUBLIC_ENDPOINT_DATA_REPRODUCTION",
+  "not_reproducible_from_release": {
+    "combined_control_decoder_3_5x": "decoder-steering traces are absent and kept separate from control-only",
+    "drift_stability_control_only_2_4x": "injected-drift LER traces are absent",
+    "fixed_policy_contemporaneous_trace": "time-matched policy mu(0) reevaluations are absent",
+    "learned_mean_trace": "epoch-indexed mu(t) outcomes are absent",
+    "low_frequency_suppression_4db": "multi-run epoch-domain LER traces are absent",
+    "randomized_recovery_1000_epochs": "spoiled-policy training trajectory is absent",
+    "scaling_convergence_gamma": "d3-d15 simulation learning curves are absent",
+    "steering_cutoff_1_over_150": "simulation grid and entropy sweep are absent",
+    "step_response_130_epochs": "control-parameter trajectory and step labels are absent",
+    "stochastic_candidate_trace": "candidate policies/actions and their outcomes are absent"
+  },
+  "public_data_direct": true,
+  "rows": [
+    {
+      "claim_id": "color_code_distance_5_tesseract_frequency_prior",
+      "independent": 0.008193644054033167,
+      "published": 0.00819,
+      "reproduced": 0.008183815294334096,
+      "source_kind": "released_hardware_data",
+      "verdict": "EXACT_PUBLIC_REPRODUCTION"
+    },
+    {
+      "claim_id": "color_code_distance_5_tesseract_si1000",
+      "independent": 0.009192770870925682,
+      "published": 0.0092,
+      "reproduced": 0.00918156712919213,
+      "source_kind": "released_hardware_data",
+      "verdict": "EXACT_PUBLIC_REPRODUCTION"
+    },
+    {
+      "claim_id": "surface_code_distance_7_alphaqubit2",
+      "independent": 0.0007727976387585933,
+      "published": 0.000772,
+      "reproduced": 0.000772682790898066,
+      "source_kind": "released_hardware_data",
+      "verdict": "EXACT_PUBLIC_REPRODUCTION"
+    },
+    {
+      "claim_id": "surface_code_distance_7_sparse_blossom_si1000",
+      "independent": 0.0014237289916927687,
+      "published": 0.00142,
+      "reproduced": 0.0014235978169055141,
+      "source_kind": "released_hardware_data",
+      "verdict": "EXACT_PUBLIC_REPRODUCTION"
+    },
+    {
+      "claim_id": "finetuning_endpoint.color_distance_5",
+      "limitation": "released endpoint decay curves do not preserve run/epoch pairing",
+      "published": 0.2,
+      "reproduced": 0.32891738501382883,
+      "source_kind": "released_unpaired_endpoints",
+      "verdict": "QUALITATIVE_MATCH_ONLY"
+    },
+    {
+      "claim_id": "finetuning_endpoint.surface_distance_7",
+      "limitation": "released before/after memory datasets are not the five contemporaneous evaluation traces in Fig. 3a",
+      "published": 0.2,
+      "reproduced": 0.2544492575018312,
+      "source_kind": "released_unpaired_endpoints",
+      "verdict": "QUALITATIVE_MATCH_ONLY"
+    }
+  ],
+  "schema_version": "google-paper-public-data.v1",
+  "source_artifact": "D:/Users/Raife/google_rl_reimplementation/artifacts/google_reproduction_v3/public_data_reproduction.json",
+  "source_artifact_sha256": "ff9a68eb36f1aa982ade0575bc18368b3ebd923a77f37ae2ad3041751b3b14cb",
+  "source_payload_hash": "d84a97397728f9cf2952bdd5e88aa0823724a03daf646f2960626a2e4f90f9ef",
+  "status": "PUBLIC_DATA_DIRECTLY_REPRODUCIBLE",
+  "synthetic_data_present": false
+}

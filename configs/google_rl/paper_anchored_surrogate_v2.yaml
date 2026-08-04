@@ -1,0 +1,39 @@
+{
+  "schema_version": "google-paper-anchored-surrogate.v2",
+  "name": "local_sparse_quadratic_surface_code_surrogate",
+  "evidence_layer": "declared synthetic plant anchored to the paper simulation form",
+  "layout": {
+    "odd_distances": [3, 5, 7, 9, 11, 13, 15],
+    "gate_count_formula": "6*d^2 - 4*d - 1",
+    "controls_per_gate_large_code": 30,
+    "distance_15_expected_controls": 38670,
+    "development_distance": 3,
+    "development_controls_per_gate": 1,
+    "factor_radius": 1
+  },
+  "plant": {
+    "surrogate_seed": 7801,
+    "irreducible_detector_floor_range": [0.008, 0.012],
+    "quadratic_weight_range": [0.045, 0.075],
+    "sensitivity_range_native_per_normalized": [0.8, 1.2],
+    "initial_residual_normalized": 0.24,
+    "randomized_residual_normalized": 0.85,
+    "maximum_detector_probability": 0.35,
+    "logical_floor": 0.0012,
+    "logical_excess_scale": 0.18,
+    "drifting_control_fraction": 0.20,
+    "sinusoidal_drift_amplitude_normalized": 0.22,
+    "step_amplitude_normalized": 0.28
+  },
+  "splits": {
+    "surrogate_development": [7801, 7802, 7803],
+    "controller_development": [7901, 7902, 7903],
+    "certification": [8101, 8102, 8103, 8104, 8105, 8106, 8107, 8108, 8109, 8110, 8111, 8112]
+  },
+  "metric_mapping": {
+    "detector": "mean local Bernoulli detector-event probability",
+    "logical": "frozen monotone risk proxy = logical_floor + logical_excess_scale * mean excess detector probability",
+    "stim_role": "surface-code detector topology validation only; no claim that the quadratic plant is a Willow circuit or pulse simulator"
+  },
+  "frozen_before_controller_tuning": true
+}

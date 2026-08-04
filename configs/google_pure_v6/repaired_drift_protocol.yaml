@@ -1,0 +1,25 @@
+{
+  "schema_version": "repaired-drift-v6.1",
+  "frozen_before_evaluation": true,
+  "development_seed": 6201,
+  "short_epochs": 48,
+  "amplitudes": [0.12, 0.22],
+  "step": {
+    "onset_fraction": 0.25,
+    "primary_metric": "integrated_excess_error_ratio_mean_over_fixed",
+    "secondary_metrics": ["settling_time", "peak_excess", "steady_state_error"]
+  },
+  "sine": {
+    "cycles": [1.0, 4.0, 12.0],
+    "primary_metric": "stability_suppression_factor_fixed_over_mean",
+    "secondary_metrics": ["gain_mean_over_fixed", "phase_lag_epochs", "residual_rms"]
+  },
+  "strobe": {
+    "pattern": [0.0, 1.0],
+    "symmetric_sign_flip_forbidden": true,
+    "primary_metric": "identifiable_response_ratio_mean_over_fixed",
+    "secondary_metrics": ["delay_epochs", "overshoot", "state_residual"]
+  },
+  "aggregation": "report_each_family_separately",
+  "identifiability_minimum_fixed_response": 1e-10
+}

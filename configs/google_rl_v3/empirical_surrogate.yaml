@@ -1,0 +1,20 @@
+{
+  "schema_version": "google-v3-empirical-surrogate.v1",
+  "model_class": "static_logit_normal_detector_observation_surrogate",
+  "fit_split": "surrogate_fit",
+  "validation_split": "surrogate_validation",
+  "controller_anchor_scores_available_to_fit": false,
+  "interactive_action_support": "NONE",
+  "counterfactual_action_policy": "REJECT_WITH_INFINITE_EXTRAPOLATION_PENALTY",
+  "validation_tolerances_frozen_before_validation": {
+    "detector_rate_mean_absolute_error_max": 0.025,
+    "detector_rate_median_absolute_error_max": 0.03,
+    "reward_variance_ratio": [0.2, 5.0],
+    "mean_absolute_covariance_absolute_error_max": 0.003,
+    "lag1_autocorrelation_absolute_error_max": 0.2,
+    "low_frequency_fraction_absolute_error_max": 0.25,
+    "logical_risk_median_absolute_log_ratio_max": 1.0
+  },
+  "posterior_predictive_seed": 73031,
+  "certification_seeds_forbidden": [8101, 8102, 8103, 8104, 8105, 8106, 8107, 8108, 8109, 8110, 8111, 8112]
+}

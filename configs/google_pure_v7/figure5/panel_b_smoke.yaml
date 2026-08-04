@@ -1,0 +1,1 @@
+{"mode":"smoke","distances":[3,5],"parameters_per_gate":[1,30],"epochs":16,"memory_cycles":10,"graph_degree_bound":32}
