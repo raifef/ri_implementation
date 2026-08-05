@@ -1,0 +1,42 @@
+{
+  "artifact_complete": true,
+  "artifact_hash": "2cd036c7a7645fc89dfee4f7e43df5a395670d6239bae924f8576d7f25da3cba",
+  "artifacts": {
+    "controller/scale_entropy_report.md": true,
+    "controller/scale_entropy_results.json": true,
+    "controller/selected_controller_contract.json": true,
+    "controller/temporal_validation.json": true,
+    "controller/temporal_validation.md": true,
+    "corrected_fault_contract.json": true,
+    "decoder/closed_loop_results.json": true,
+    "decoder/decoder_contract.json": true,
+    "decoder/decoder_validation.json": true,
+    "decoder/report.md": true,
+    "import_manifest.json": true,
+    "natural_drift/figure.png": true,
+    "natural_drift/psd_results.npz": true,
+    "natural_drift/raw_traces.npz": true,
+    "natural_drift/report.md": true,
+    "natural_drift/run_plan.json": true,
+    "next_commands.md": true,
+    "preflight_manifest.json": true,
+    "root_cause_update.json": true,
+    "root_cause_update.md": true,
+    "step_response/ablation_results.json": true,
+    "step_response/figure.png": true,
+    "step_response/fits.json": true,
+    "step_response/raw_trajectories.npz": true,
+    "step_response/report.md": true,
+    "step_response/run_plan.json": true
+  },
+  "blocking_reasons": [
+    "REFERENCE_SCALE_HELD_OUT_RUNS_NOT_AUTOMATIC"
+  ],
+  "certification_seeds_consumed": false,
+  "claim_supported": false,
+  "implementation_complete": true,
+  "mechanism_valid": true,
+  "paper_comparable": false,
+  "reference_evidence_complete": false,
+  "schema_version": "google-pure-v10-status.v1"
+}

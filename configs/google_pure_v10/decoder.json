@@ -1,0 +1,12 @@
+{
+  "schema_version": "google-pure-v10-decoder.v1",
+  "code_family": "surface_code:rotated_memory_x",
+  "distance": 3,
+  "rounds": 3,
+  "physical_error_probability": 0.003,
+  "shots": 128,
+  "decoder_backend": "pymatching_mwpm",
+  "neural_decoder_trained": false,
+  "silent_fallback_permitted": false,
+  "decoder_steering_source_defined": false
+}

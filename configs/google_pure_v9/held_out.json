@@ -1,0 +1,50 @@
+{
+  "schema_version": "google-pure-v9-held-out.v1",
+  "frozen_before_results": true,
+  "controller_candidates": [
+    {
+      "id": "candidate-small-scale-a",
+      "initial_scale": 0.02,
+      "minimum_scale": 0.001,
+      "maximum_scale": 0.25,
+      "scale_learning_rate": 0.01,
+      "entropy_coefficient": 0.01,
+      "mean_learning_rate": 0.02,
+      "replay_capacity_epochs": 1,
+      "update_passes": 1,
+      "ppo_clip": 0.2
+    },
+    {
+      "id": "candidate-small-scale-b",
+      "initial_scale": 0.04,
+      "minimum_scale": 0.001,
+      "maximum_scale": 0.25,
+      "scale_learning_rate": 0.01,
+      "entropy_coefficient": 0.02,
+      "mean_learning_rate": 0.02,
+      "replay_capacity_epochs": 1,
+      "update_passes": 1,
+      "ppo_clip": 0.2
+    }
+  ],
+  "frequencies_cycles_per_epoch": [0.0033333333333333335, 0.006666666666666667, 0.016666666666666666],
+  "phases_radians": [0.0, 2.0943951023931953, 4.1887902047863905],
+  "burn_in_periods": 1,
+  "primary_periods": 6,
+  "window_extension_periods": 1,
+  "window_tolerance": 0.15,
+  "held_out_seeds": [19201, 19202],
+  "candidates": 12,
+  "cycles_per_candidate": 4000,
+  "selection_rules": {
+    "mean_improvement_lower_bound_minimum": 0.0,
+    "candidate_phase_average_minimum": 0.0,
+    "tracking_gain_lower_bound_minimum": 0.0,
+    "clipping_fraction_maximum": 0.01,
+    "exploration_damage_fraction_maximum": 1.0,
+    "phase_count_minimum": 3,
+    "window_tolerance": 0.15
+  },
+  "plant_configuration_frozen": true,
+  "held_out_results_may_not_change_rules": true
+}

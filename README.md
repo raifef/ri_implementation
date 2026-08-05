@@ -67,6 +67,46 @@ google-rl-evidence-v8-status
 
 Outputs are written under `artifacts/` inside this project. Earlier `v2` through `v7` and paper-panel commands remain installed for reproducibility and historical protocol replay.
 
+## Dynamic controller, spectral, decoder, and step-response amendments
+
+The v9 workflow separates initial, minimum, and maximum policy scales; corrects the v8 scientific classifications; preserves the five-policy EDR decomposition; and adds preregistered scale, entropy, temporal, clipping, phase, and window-stability gates.
+
+Run its compact mechanism checks with:
+
+```powershell
+google-rl-v9-import-v8-audits
+google-rl-v9-correct-root-cause-classification
+google-rl-v9-run-stage-a --mode smoke
+google-rl-v9-run-stage-b --mode smoke
+google-rl-v9-run-stage-c --mode smoke
+google-rl-v9-freeze-held-out-protocol
+google-rl-v9-run-held-out-validation --mode smoke
+google-rl-v9-select-controller
+google-rl-v9-report-root-cause-update
+google-rl-v9-status
+```
+
+The v10 workflow adds duration-first natural-drift PSD analysis, a pluggable Stim/PyMatching decoder loop, strict separation of control-only and decoder-assisted estimands, and target-relative injected-step diagnostics with controlled one-factor ablations.
+
+```powershell
+google-rl-v10-import-audits
+google-rl-v10-correct-classifications
+google-rl-v10-preflight
+google-rl-v10-run-scale-entropy --mode smoke
+google-rl-v10-run-temporal-validation --mode smoke
+google-rl-v10-run-natural-drift --mode smoke
+google-rl-v10-validate-decoder
+google-rl-v10-run-control-only
+google-rl-v10-run-control-plus-decoder
+google-rl-v10-run-decoder-steering
+google-rl-v10-run-step-response --mode smoke
+google-rl-v10-run-step-ablation --mode smoke
+google-rl-v10-report
+google-rl-v10-status
+```
+
+Reference-scale acquisitions are never launched automatically. Each planning command prints periods, candidates, cycles, seeds, hashes, runtime, and storage estimates; the corresponding reference command requires `--execute`.
+
 ## Test
 
 ```powershell

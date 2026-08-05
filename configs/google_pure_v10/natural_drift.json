@@ -1,0 +1,30 @@
+{
+  "schema_version": "google-pure-v10-natural-drift.v1",
+  "analysis_contract": {
+    "detrending": "constant",
+    "window": "hann",
+    "overlap_fraction": 0.5,
+    "integration": "sum of one-sided Welch density times bin width",
+    "positive_suppression": "10*log10(fixed_band_power/policy_band_power)"
+  },
+  "smoke": {
+    "duration_epochs": 512,
+    "segment_length": 256,
+    "low_frequency_band": [0.01, 0.08],
+    "plant_indices": [0, 1],
+    "candidates": 6,
+    "cycles_per_candidate": 1200,
+    "minimum_low_frequency_bins": 4,
+    "minimum_welch_segments": 3
+  },
+  "reference": {
+    "duration_epochs": 4096,
+    "segment_length": 1024,
+    "low_frequency_band": [0.001, 0.012],
+    "plant_indices": [0, 1, 2, 3, 4, 5],
+    "candidates": 40,
+    "cycles_per_candidate": 100000,
+    "minimum_low_frequency_bins": 4,
+    "minimum_welch_segments": 5
+  }
+}

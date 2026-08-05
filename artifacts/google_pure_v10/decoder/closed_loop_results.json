@@ -1,0 +1,73 @@
+{
+  "analysis_contract": "fixed MWPM decoder, no decoder steering",
+  "artifact_complete": true,
+  "artifact_hash": "b98c0780d3bd3433403d03632f5fdb60cc0c86389503843431c5d9cec4e0e39c",
+  "blocking_reasons": [],
+  "candidate_budget": 0,
+  "certification_seeds_consumed": false,
+  "claim_supported": true,
+  "control_only_metrics_merged": false,
+  "controller_hash": "a3873a3e0247f141bc00bfcd5acf0211c280efc079a88e7f9c1ed50c76a93b02",
+  "decoder_hash": "57101905108b6c8ead6048c7df64e83cae04a533d8b9199d0c559fbb9a070608",
+  "drift_tape_hash": "5a664322f9d69bbd1f1d658b98d09e4c4c9bc97c19e2f627c52e6309557c6f79",
+  "evidence_class": "decoder_coupled_simulation",
+  "experiment_family": "CONTROL_PLUS_FIXED_DECODER",
+  "graph_hash": "2cb771bf396dd9c335e26ba38a8b6111bee7250dfab1cd5ec83577a33a505d04",
+  "mechanism_valid": true,
+  "mode": "smoke",
+  "observable_definition": "decoder logical failures compared with sampled Stim observables",
+  "paper_comparable": false,
+  "plant_hash": "2cb771bf396dd9c335e26ba38a8b6111bee7250dfab1cd5ec83577a33a505d04",
+  "protocol_hash": "368f66b58d2f4739e3a7f7e9d22999a69088f91a0e3b243bef53736dbf2ab82b",
+  "qec_cycle_budget": 1536,
+  "result": {
+    "circuit_hash": "2cb771bf396dd9c335e26ba38a8b6111bee7250dfab1cd5ec83577a33a505d04",
+    "control_and_decoder_contributions_reported_separately": true,
+    "control_metrics": {
+      "mean_detector_event_rate": 0.018798828125,
+      "per_step_detector_event_rate": [
+        0.019205729166666668,
+        0.0205078125,
+        0.01171875,
+        0.023763020833333332
+      ]
+    },
+    "controller_reward_input": "detector_events_only",
+    "decoder_metrics": {
+      "backend": "pymatching_mwpm",
+      "configured": true,
+      "decode_calls": 4,
+      "decoder_hash": "57101905108b6c8ead6048c7df64e83cae04a533d8b9199d0c559fbb9a070608",
+      "logical_error_rate": 0.00390625,
+      "logical_failures": 2,
+      "parameters": {
+        "edge_weight_scale": 1.0
+      },
+      "reference_backend": true,
+      "shots": 512,
+      "silent_fallback_used": false
+    },
+    "experiment_family": "CONTROL_PLUS_FIXED_DECODER",
+    "hidden_logical_outcome_used_by_physical_controller": false,
+    "logical_failures_per_step": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "sequence": [
+      "physical_control_policy",
+      "qec_circuit_and_detector_generation",
+      "detector_events",
+      "decoder",
+      "logical_prediction_and_metrics",
+      "no_decoder_steering"
+    ],
+    "shots_per_step": 128,
+    "steering_actions": [],
+    "steering_policy_hash": null,
+    "steps": 4
+  },
+  "schema_version": "google-pure-v10-closed-loop-results.v1",
+  "seed": 21221
+}
