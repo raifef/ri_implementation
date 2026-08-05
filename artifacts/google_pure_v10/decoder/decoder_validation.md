@@ -1,0 +1,16 @@
+# Decoder Validation
+
+- **schema_version**: `"google-pure-v10-decoder-validation.v1"`
+- **contract_hash**: `"bdcb4dc3c955da399e7ad73ed074f209504e44bc1f085c63fa189c4323c1f531"`
+- **closed_loop**: `{"circuit_hash": "2cb771bf396dd9c335e26ba38a8b6111bee7250dfab1cd5ec83577a33a505d04", "control_and_decoder_contributions_reported_separately": true, "control_metrics": {"mean_detector_event_rate": 0.02300347222222222, "per_step_detector_event_rate": [0.03125, 0.017903645833333332, 0.019856770833333332]}, "controller_reward_input": "detector_events_only", "decoder_metrics": {"backend": "pymatching_mwpm", "configured": true, "decode_calls": 3, "decoder_hash": "c62c5ff9b3c74d27eeaa57f3df09b18e8c9936f76e473ae304b695191006aedc", "logical_error_rate": 0.005208333333333333, "logical_failures": 2, "parameters": {"edge_weight_scale": 1.0}, "reference_backend": true, "shots": 384, "silent_fallback_used": false}, "experiment_family": "CONTROL_PLUS_FIXED_DECODER", "hidden_logical_outcome_used_by_physical_controller": false, "logical_failures_per_step": [1, 1, 0], "sequence": ["physical_control_policy", "qec_circuit_and_detector_generation", "detector_events", "decoder", "logical_prediction_and_metrics", "no_decoder_steering"], "shots_per_step": 128, "steering_actions": [], "steering_policy_hash": null, "steps": 3}`
+- **mwpm_executed**: `true`
+- **silent_fallback_used**: `false`
+- **neural_decoder_trained**: `false`
+- **control_only_claims_contaminated**: `false`
+- **artifact_complete**: `true`
+- **mechanism_valid**: `true`
+- **claim_supported**: `true`
+- **paper_comparable**: `false`
+- **blocking_reasons**: `[]`
+- **certification_seeds_consumed**: `false`
+- **artifact_hash**: `"d1e9fb72342b44915bbe785d18058425fe5930289aeb14f3977666613651f1d9"`

@@ -1,0 +1,26 @@
+{
+  "artifact_complete": true,
+  "artifact_hash": "3dc805c7272525efd159d98ba69a86b7a7ccfe587a8f8d0a9ed1692b7e1237d5",
+  "blocking_reasons": [
+    "HELD_OUT_ACQUISITION_NOT_EXECUTED"
+  ],
+  "candidates": 12,
+  "certification_seeds_consumed": false,
+  "claim_supported": false,
+  "controller_hash": "7c2a3b622fbfcd827d8472ac669d2ba131ea235e3efd63a42b38504eacbf9141",
+  "cycles": 2350080000,
+  "epochs": "frequency-dependent",
+  "estimated_memory_storage": 88473600,
+  "estimated_runtime": "seconds for smoke; explicit user-run acquisition for validation/reference",
+  "mechanism_valid": true,
+  "mode": "smoke",
+  "paper_comparable": false,
+  "periods": 6,
+  "protocol_hash": "0daa06dd81227ea21a7bbdcc535da705dfcad28d59e3102d0b1b08c552ffc4ca",
+  "runs": 6,
+  "schema_version": "google-pure-v10-temporal-plan.v1",
+  "seeds": [
+    19201,
+    19202
+  ]
+}

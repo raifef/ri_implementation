@@ -1,0 +1,13 @@
+# Corrected v8 Fault Classification
+
+- **schema_version**: `"google-pure-v9-corrected-v8-classification.v1"`
+- **exploration**: `["CURRENT_OPERATIONAL_POLICY_SCALE_MAKES_STEERING_IMPOSSIBLE", "MINIMUM_SCALE_FLOOR_EFFECT_NOT_ESTABLISHED"]`
+- **entropy**: `["ENTROPY_IMPLEMENTATION_PASS", "ENTROPY_SWEEP_NOT_OPERATIONAL_UNDER_TESTED_PROTOCOL"]`
+- **temporal**: `["TEMPORAL_IMPLEMENTATION_PASS", "TEMPORAL_EVALUATION_PROTOCOL_FAILURE"]`
+- **unresolved_causes**: `["MEAN_TRACKING_BANDWIDTH_FAILURE", "SOURCE_UNSPECIFIED_INITIAL_SCALE", "SOURCE_UNSPECIFIED_SCALE_LEARNING_RATE", "SOURCE_UNSPECIFIED_ENTROPY_NORMALIZATION", "SOURCE_UNSPECIFIED_UPDATE_LIFECYCLE", "SYNTHETIC_PLANT_NON_COMMENSURABILITY"]`
+- **remaining_plausible_causes_empty**: `false`
+- **behavior_changed**: `false`
+- **blocking_reasons**: `[]`
+- **certification_seeds_consumed**: `false`
+- **seed_10101_consumed**: `false`
+- **artifact_hash**: `"4f4c0962512592ed2f0920510bcc3efde8ca0ef21d6387d8a95759c4ffe308d4"`

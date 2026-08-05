@@ -1,0 +1,14 @@
+{
+  "schema_version": "google-pure-v10-controller.v1",
+  "initial_scale_grid": [0.01, 0.02, 0.04, 0.06, 0.09, 0.12, 0.14],
+  "entropy_grid": [0.0, 0.0004, 0.001, 0.01, 0.02, 0.1],
+  "scale_learning_rate_grid": [0.001, 0.002, 0.005, 0.01, 0.02],
+  "minimum_scale": 0.001,
+  "maximum_scale": 0.25,
+  "mean_learning_rate": 0.02,
+  "clipping_fraction_maximum": 0.01,
+  "frequencies_cycles_per_epoch": [0.0033333333333333335, 0.006666666666666667, 0.016666666666666666],
+  "phases_radians": [0.0, 2.0943951023931953, 4.1887902047863905],
+  "minimum_validation_periods": 5,
+  "plant_frozen": true
+}

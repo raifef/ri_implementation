@@ -1,0 +1,32 @@
+# Selected Controller Contract
+
+- **schema_version**: `"google-pure-v9-selected-controller.v1"`
+- **selected**: `false`
+- **status**: `"NO_SOURCE_COMPATIBLE_CONTROLLER_IDENTIFIED"`
+- **controller**: `null`
+- **controller_hash**: `null`
+- **selection_protocol_hash**: `"0daa06dd81227ea21a7bbdcc535da705dfcad28d59e3102d0b1b08c552ffc4ca"`
+- **development_seed_registry**: `[19101, 19102, 19103]`
+- **held_out_seed_registry**: `[19201, 19202]`
+- **source_classification**: `{"entropy_coefficient": "SOURCE_ANCHORED", "initial_scale": "SOURCE_ANCHORED", "maximum_scale": "SOURCE_LITERAL", "mean_learning_rate": "SOURCE_ANCHORED", "minimum_scale": "SOURCE_UNSPECIFIED_BUT_PREREGISTERED", "optimizer": "SOURCE_LITERAL", "replay_capacity_epochs": "SOURCE_LITERAL", "scale_learning_rate": "SOURCE_UNSPECIFIED_BUT_PREREGISTERED", "update_passes": "SOURCE_LITERAL"}`
+- **audit_repairs**: `["corrected failure labels", "independent scale fields", "phase/window gates", "clipping guard"]`
+- **behavior_changes**: `[]`
+- **source_anchored_choices**: `["initial_scale", "entropy_coefficient", "mean_learning_rate"]`
+- **source_unspecified_development_choices**: `["minimum_scale", "scale_learning_rate"]`
+- **rejected_changes**: `["plant retuning", "future drift access", "hidden logical-outcome reward"]`
+- **plant_hash**: `"65b428d8c2c92acece48235647140cadb6e67cb2f23ba08d4b94171150b50b09"`
+- **full_figure5a_acquisition_permitted**: `false`
+- **certification_seeds_consumed**: `false`
+- **blocking_reasons**: `["held_out_evidence_mode", "learned_mean_positive_with_uncertainty", "phase_estimate_identifiable", "sampled_candidates_positive_phase_average", "tracking_gain_materially_positive", "window_stable"]`
+- **contract_hash**: `"2497f01bd5646b2f0fbb7b048dae9b7b88edd155be6aca45b850bdd0660dac48"`
+- **seed_10101_consumed**: `false`
+- **artifact_hash**: `"b634108bb0f504557d63947cb7a54b42793e50952cc10e9602c2b378be46a234"`
+
+## Blocking reasons
+
+- held_out_evidence_mode
+- learned_mean_positive_with_uncertainty
+- phase_estimate_identifiable
+- sampled_candidates_positive_phase_average
+- tracking_gain_materially_positive
+- window_stable
