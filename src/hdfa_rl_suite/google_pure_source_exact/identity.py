@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .figure5a.acquisition import COORDINATE_CONTRACT, FIGURE5A_IMPLEMENTATION_VERSION
+
 PAPER_DIRECT_SIGMA = "PAPER_DIRECT_SIGMA"
 DIRECT_SIGMA = "direct_sigma"
 
@@ -42,8 +44,11 @@ def build_direct_sigma_identity(root: Path) -> dict[str, Any]:
         "source_parameterization":"DIRECT_SIGMA_SOURCE_EXACT",
         "ratio_clipping":"SOURCE_ELEMENTWISE_COORDINATE_CLIPPING",
         "baseline":"JOINT_LEARNED_DETECTOR_BASELINE",
-        "normalization_boundary":"google-pure-v15-production-boundary.v1",
-        "boundary_transform":"u = u0 + s*x",
+        "figure5a_coordinate_contract":COORDINATE_CONTRACT,
+        "figure5a_action_execution":"identity_applied_gaussian",
+        "figure5a_empirical_relative_normalization":"NONCANONICAL_ABLATION_ONLY",
+        "non_figure5a_normalization_boundary":"google-pure-v15-production-boundary.v1",
+        "non_figure5a_boundary_transform":"u = u0 + s*x",
         "optimized_scale_variable":"sigma",
         "controller_config":config["controller"],
         "dependency_hashes":dependencies,
@@ -53,8 +58,10 @@ def build_direct_sigma_identity(root: Path) -> dict[str, Any]:
         "controller_hash":_canonical_hash(controller_contract),
         "controller_code_hash":_canonical_hash(code_hashes),
         "controller_code_files":code_hashes,
-        "normalization_loaded":True,
-        "implementation_version":"google_pure_v15",
+        "figure5a_normalization_loaded":False,
+        "non_figure5a_normalization_loaded":True,
+        "figure5a_implementation_version":FIGURE5A_IMPLEMENTATION_VERSION,
+        "implementation_version":"family-conditional-source-execution.v1",
     }
 
 def require_direct_sigma_identity(identity: dict[str, Any], expected: dict[str, Any]|None=None) -> None:

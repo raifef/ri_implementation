@@ -140,8 +140,8 @@ class Figure5aStimPlant:
             "reward_component_raw_detectors": [list(group) for group in self.reward_component_raw_detectors],
             "reward_component_keys": list(self.reward_component_keys),
             "ensemble_seed": int(ensemble_seed),
-            "action_execution": "plant_derived_per_coordinate_scaled_tanh",
-            "control_limits": self._control_limits.tolist(),
+            "canonical_action_execution": "identity_applied_gaussian",
+            "bounded_action_ablation_limits": self._control_limits.tolist(),
         })
 
     def _time_translation_equivalence_classes(
@@ -151,11 +151,11 @@ class Figure5aStimPlant:
 
         Stim's generated memory circuits encode detector coordinates as
         ``(space..., time)``.  Equal spatial coordinates alone are insufficient
-        at the initial/final boundaries, whose detecting regions differ.  The
-        class key therefore combines the spatial coordinate with the exact
-        control-dependency row.  Interior copies collapse across time while
-        non-equivalent boundaries remain distinct; the resulting reward size is
-        independent of the number of repeated interior rounds.
+        at boundaries and the first repeated layer, whose detecting regions
+        differ.  The initial key combines spatial coordinate with the exact
+        control-dependency row; the first member of every repeated key is then
+        retained separately from its steady translated copies.  The resulting
+        reward size is independent of the number of repeated steady rounds.
         """
         coordinates = self._reference.get_detector_coordinates()
         grouped: dict[tuple[tuple[float, ...], tuple[int, ...]], list[int]] = {}
@@ -166,8 +166,26 @@ class Figure5aStimPlant:
             spatial = coordinate[:-1]
             dependencies = tuple(np.flatnonzero(raw_mask[detector]).astype(int).tolist())
             grouped.setdefault((spatial, dependencies), []).append(detector)
-        groups = tuple(tuple(values) for values in grouped.values())
-        keys = tuple(canonical_hash({"space": key[0], "controls": key[1]}) for key in grouped)
+        groups_list: list[tuple[int, ...]] = []
+        keys_list: list[str] = []
+        for key, values in grouped.items():
+            # The first repeated detector layer is a circuit-start transient:
+            # it has the same spatial coordinate and binary control support as
+            # later layers, but not the same exact detector marginal.  Keep it
+            # separate and combine only the steady translated copies.  This
+            # produces a round-invariant representation without over-merging.
+            partitions = ((values[0],), tuple(values[1:])) if len(values) > 1 else (tuple(values),)
+            for role, partition in enumerate(partitions):
+                if not partition:
+                    continue
+                groups_list.append(partition)
+                keys_list.append(canonical_hash({
+                    "space": key[0], "controls": key[1],
+                    "temporal_role": "first_repeated_layer" if role == 0 and len(values) > 1
+                    else "steady_time_translation_class",
+                }))
+        groups = tuple(groups_list)
+        keys = tuple(keys_list)
         if sorted(detector for group in groups for detector in group) != list(range(self.raw_detector_count)):
             raise RuntimeError("time-translation reduction lost or duplicated a detector")
         return groups, keys
@@ -309,8 +327,8 @@ class Figure5aStimPlant:
             for group in self.reward_component_raw_detectors
         ], dtype=float)
 
-    def _raw_detector_marginals(self, controls: np.ndarray, *, epoch: int, frequency: float,
-                                target_controls: np.ndarray | None = None) -> np.ndarray:
+    def raw_detector_marginals(self, controls: np.ndarray, *, epoch: int, frequency: float,
+                               target_controls: np.ndarray | None = None) -> np.ndarray:
         """Exact detector marginals of the actual Stim detector error model."""
         circuit = self._circuit_from_probabilities(self.probabilities(
             controls, epoch, frequency, target_controls=target_controls))
@@ -332,11 +350,17 @@ class Figure5aStimPlant:
                     affected.add(detector)
             for detector in affected:
                 parity_complement[detector] *= 1.0 - 2.0 * probability
-        return 0.5 * (1.0 - parity_complement)
+        result = 0.5 * (1.0 - parity_complement)
+        result.setflags(write=False)
+        return result
+
+    # Compatibility for the calibration ablation; canonical tests and callers
+    # use the public exact-marginal interface above.
+    _raw_detector_marginals = raw_detector_marginals
 
     def expected_reward_rates(self, controls: np.ndarray, *, epoch: int, frequency: float,
                               target_controls: np.ndarray | None = None) -> np.ndarray:
-        raw = self._raw_detector_marginals(
+        raw = self.raw_detector_marginals(
             controls, epoch=epoch, frequency=frequency, target_controls=target_controls)
         return np.asarray([
             float(np.mean(raw[list(group)])) for group in self.reward_component_raw_detectors
@@ -345,7 +369,7 @@ class Figure5aStimPlant:
     def expected_global_edr(self, controls: np.ndarray, *, epoch: int, frequency: float,
                             target_controls: np.ndarray | None = None) -> float:
         """Mean EDR over raw detector opportunities, as in Figure S3."""
-        return float(np.mean(self._raw_detector_marginals(
+        return float(np.mean(self.raw_detector_marginals(
             controls, epoch=epoch, frequency=frequency, target_controls=target_controls)))
 
     def sample_detector_observation(self, controls: np.ndarray, *, epoch: int, frequency: float,

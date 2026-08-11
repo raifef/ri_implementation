@@ -2,19 +2,22 @@
   "schema_version": "google-pure-source-exact-figure5a-config.v1",
   "paper_doi": "10.1038/s41586-026-10759-2",
   "dependencies": {
-    "normalization_bundle": "configs/google_pure_source_exact/figure5a_normalization.json",
     "direct_sigma_status": "artifacts/google_pure_source_exact/policy_parameterization/final_status.json"
+  },
+  "ablations": {
+    "empirical_relative_normalization_bundle": "configs/google_pure_source_exact/figure5a_normalization.json",
+    "empirical_relative_normalization_status": "NONCANONICAL_CONDITIONING_ABLATION"
   },
   "plant": {
     "distance": 3,
     "basis": "z",
-    "circuit_rounds": 3,
+    "circuit_rounds": 5,
     "ensemble_seed": 53001,
     "one_qubit_irreducible": [0.0002, 0.0008],
     "two_qubit_irreducible": [0.001, 0.003],
     "one_qubit_omega": [0.002, 0.006],
     "two_qubit_omega": [0.004, 0.012],
-    "maximum_probability": 0.08,
+    "maximum_probability": 0.49,
     "action_probability_margin_fraction": 0.000001,
     "ensemble_source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED",
     "gate_site_injection_mapping_source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED"
@@ -22,8 +25,8 @@
   "controller": {
     "parameterization": "DIRECT_SIGMA_SOURCE_EXACT",
     "initial_sigma": 0.15,
-    "mean_learning_rate": 0.08,
-    "sigma_learning_rate": 0.02,
+    "mean_learning_rate": 0.005,
+    "sigma_learning_rate": 0.002,
     "baseline_learning_rate": 0.08,
     "baseline_weight": 0.2,
     "ppo_clip": 0.2,
@@ -31,12 +34,13 @@
     "maximum_sigma": 0.8,
     "positivity_guard": "projected_gradient",
     "action_execution": {
-      "policy_space": "unbounded_latent_gaussian",
-      "plant_space": "bounded_dimensionless_gate_controls",
-      "transform": "plant_derived_per_coordinate_scaled_tanh",
-      "likelihood_space": "latent_gaussian",
-      "ppo_jacobian_treatment": "cancels_exactly_in_same_action_policy_ratios",
-      "limit_source": "worst_case_frozen_probability_with_explicit_margin_over_optimum_range_minus_one_to_one",
+      "policy_space": "applied_dimensionless_gate_controls_p",
+      "plant_space": "applied_dimensionless_gate_controls_p",
+      "transform": "identity",
+      "likelihood_space": "applied_gaussian",
+      "entropy_space": "applied_gaussian",
+      "mean_bounds": null,
+      "empirical_relative_normalization": false,
       "uses_hidden_optimum": false
     },
     "loss_aggregation": {
@@ -45,7 +49,8 @@
       "entropy": "one policy-level sum over 41 controls",
       "detector_degree_entropy_multiplication": false
     },
-    "source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED"
+    "source_identifiability": "SOURCE_UNSPECIFIED_DEVELOPMENT_TUNED",
+    "development_tuning_note": "Reduced only after the direct source-coordinate 250-epoch validation exposed unstable unbounded-mean updates; not claimed as a published Google hyperparameter."
   },
   "profiles": {
     "smoke": {
@@ -59,6 +64,12 @@
       "candidates_per_epoch": 10,
       "qec_cycles_per_candidate": 300,
       "seeds": [53201, 53202, 53203]
+    },
+    "dynamic_validation": {
+      "epochs": 250,
+      "candidates_per_epoch": 8,
+      "qec_cycles_per_candidate": 600,
+      "seeds": [53301, 53302, 53303]
     },
     "reference": {
       "epochs": 1000,
@@ -82,7 +93,7 @@
     "entropy_weights": [0.001, 0.0017782794100389228, 0.0031622776601683794, 0.005623413251903491, 0.01, 0.01778279410038923, 0.03162277660168379, 0.05623413251903491, 0.1]
   },
   "seed_registry": {
-    "development": [53101, 53201, 53202, 53203],
+    "development": [53101, 53201, 53202, 53203, 53301, 53302, 53303],
     "certification_reserved": [930001, 930002, 930003]
   },
   "planning": {

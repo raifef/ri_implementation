@@ -45,6 +45,16 @@ def test_every_amended_paper_family_passes_identity_preflight_without_acquisitio
         assert not protocol_identity_reasons(protocol)
         require_amended_acquisition(protocol)
 
+    figure5a = build_protocol(
+        ExperimentFamily.FIGURE5A_REAL_TIME_STEERING.value, mode="paper-scale")
+    assert figure5a["action_execution"] == "identity_applied_gaussian"
+    assert figure5a["likelihood_space"] == figure5a["entropy_space"] == "applied_gaussian"
+    assert figure5a["plant_boundary_execution"] == "none_source_coordinate_identity"
+    assert figure5a["empirical_relative_normalization_applied"] is False
+    assert figure5a["mean_bounds_applied"] is False
+    assert "sensitivity_map_hash" not in figure5a
+    assert "boundary_transform_hash" not in figure5a
+
 def test_ninety_percent_response_is_relative_to_injected_target():
     onset=20; trace=np.zeros(240); trace[onset:]=.3*(1-np.exp(-np.arange(220)/40))
     result=estimate_step_response(trace,onset_epoch=onset,target=1.0,sustained_epochs=10)

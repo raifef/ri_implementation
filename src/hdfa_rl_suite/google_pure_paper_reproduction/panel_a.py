@@ -49,17 +49,17 @@ def acquire_condition(protocol: Mapping[str, Any], condition: Mapping[str, Any])
         "plant_instance_hash":plant.plant_hash,"graph_instance_hash":canonical_hash(plant.mask.astype(int).tolist()),
         "candidate_qec_cycles":result["candidate_qec_cycles"],"four_stream_qec_cycles":result["four_stream_qec_cycles"],
         "checkpoint_every_candidates":result["checkpoint_every_candidates"],
-        "v15_provenance": {key: result[key] for key in (
-            "implementation_version", "sensitivity_map_hash", "sensitivity_definition_hash",
-            "calibration_bundle_hash", "detector_degree_audit_hash", "boundary_transform_hash",
-            "boundary_transform_name", "boundary_apply_count", "control_order_hash",
-            "expanded_scale_hash", "fresh_acquisition", "reused_shard_ids", "source_budget_profile")},
-        "boundary_trace": result["boundary_trace"],
+        "source_coordinate_provenance": {key: result[key] for key in (
+            "implementation_version", "coordinate_contract", "action_execution",
+            "plant_boundary_execution", "likelihood_space", "entropy_space",
+            "empirical_relative_normalization_applied", "mean_bounds_applied",
+            "control_order_hash", "fresh_acquisition", "reused_shard_ids",
+            "source_budget_profile")},
         "normalization_contract":"(C_fixed-C_candidates)/(C_fixed-C_optimal)",
         "mean_policy_reported_separately":True,"source_structure_match":True,"paper_comparable":False,
         "blocking_reasons":["the proprietary Figure 5a plant ensemble and optimizer hyperparameters are unavailable"],
         "trajectory":{"epoch":[row["epoch"] for row in records],
-            "learned_mean":[row["post_update_normalized_mean"][0] for row in records],
+            "learned_mean":[row["post_update_mean"][0] for row in records],
             "optimum":[row["optimum"] for row in records],
             "mean_sigma":[float(np.mean(row["post_update_sigma"])) for row in records]}}
 

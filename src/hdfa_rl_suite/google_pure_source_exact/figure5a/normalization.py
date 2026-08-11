@@ -1,4 +1,4 @@
-"""Figure-S3 normalization measured on the actual Figure 5a Stim plant.
+"""Noncanonical Figure-S3-style conditioning ablation for the Figure 5a plant.
 
 The paper defines EDR as a probability and writes
 
@@ -11,7 +11,9 @@ unit-amplitude sinusoidal optimum.  We therefore retain the literal sigma0 as
 a measured diagnostic but apply only its *relative* anisotropy correction,
 fixing the otherwise unidentified common gauge by preserving the weighted
 geometric-mean native scale.  This is a clean-room convention, not a claim
-about Google's unpublished absolute coordinate scale.
+about Google's unpublished absolute coordinate scale.  This module is never
+loaded by the canonical Figure 5a acquisition; it exists only to quantify the
+effect of an empirical relative-conditioning ablation.
 """
 from __future__ import annotations
 
@@ -36,6 +38,7 @@ NORMALIZATION_METHOD = "FIG_S3_STIM_EDR_RELATIVE_EQUALIZATION"
 SOURCE_LITERAL_TARGET_EDR_INCREASE_FRACTION = 1.0
 APPLIED_COMMON_SCALE_GAUGE = "WEIGHTED_GEOMETRIC_MEAN_NATIVE_SCALE_EQUALS_ONE"
 CONTROL_GROUPING_IDENTIFIABILITY = "SOURCE_UNSPECIFIED_PREREGISTERED"
+SCIENTIFIC_STATUS = "EMPIRICAL_RELATIVE_NORMALIZATION_ABLATION"
 
 
 def reward_representation_hash(plant: Figure5aStimPlant) -> str:
@@ -162,6 +165,8 @@ def build_empirical_normalization(
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "normalization_method": NORMALIZATION_METHOD,
+        "scientific_status": SCIENTIFIC_STATUS,
+        "canonical_figure5a_execution": False,
         "plant_hash": plant.plant_hash,
         "reward_representation_hash": reward_representation_hash(plant),
         "raw_detector_count": plant.raw_detector_count,
@@ -226,6 +231,9 @@ class Figure5aEmpiricalBoundary:
             failures.append("schema changed")
         if value.get("normalization_method") != NORMALIZATION_METHOD:
             failures.append("normalization method changed")
+        if (value.get("scientific_status") != SCIENTIFIC_STATUS or
+                value.get("canonical_figure5a_execution") is not False):
+            failures.append("normalization ablation was promoted to canonical execution")
         if value.get("plant_hash") != plant.plant_hash:
             failures.append("plant hash changed")
         if value.get("reward_representation_hash") != reward_representation_hash(plant):
@@ -309,6 +317,8 @@ class Figure5aEmpiricalBoundary:
         return {
             "implementation_version": IMPLEMENTATION_VERSION,
             "normalization_method": NORMALIZATION_METHOD,
+            "scientific_status": SCIENTIFIC_STATUS,
+            "canonical_figure5a_execution": False,
             "source_literal_normalization_target_edr_fraction":
                 SOURCE_LITERAL_TARGET_EDR_INCREASE_FRACTION,
             "normalization_edr_unit": "fraction",
@@ -346,6 +356,9 @@ def require_figure5a_boundary_provenance(value: Mapping[str, Any]) -> None:
         raise RuntimeError("Figure 5a result did not use the empirical source boundary")
     if value.get("normalization_method") != NORMALIZATION_METHOD:
         raise RuntimeError("Figure 5a normalization method changed")
+    if (value.get("scientific_status") != SCIENTIFIC_STATUS or
+            value.get("canonical_figure5a_execution") is not False):
+        raise RuntimeError("Figure 5a normalization is an ablation, not canonical execution")
     if value.get("normalization_edr_unit") != "fraction":
         raise RuntimeError("Figure 5a normalization silently changed EDR units")
     if value.get("percentage_point_conversion_applied") is not False:
