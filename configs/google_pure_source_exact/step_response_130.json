@@ -1,0 +1,14 @@
+{
+  "profile": "reference_held_out",
+  "distance": 5,
+  "controls": 924,
+  "candidates_per_epoch": 40,
+  "cycles_per_candidate": 100000,
+  "epochs": 720,
+  "onset_epoch": 60,
+  "direction_coordinate": 0,
+  "target_delta_normalized": 0.5,
+  "seed": 91301,
+  "certification": true,
+  "launch_automatically": false
+}

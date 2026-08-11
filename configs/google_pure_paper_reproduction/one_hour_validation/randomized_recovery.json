@@ -1,0 +1,13 @@
+{
+  "profile_name": "ONE_HOUR_SCIENTIFIC_VALIDATION",
+  "epochs": 1000,
+  "candidates": 16,
+  "cycles_per_candidate": 36000,
+  "controls": 924,
+  "entropy_coefficient": 0.001,
+  "sustained_epochs": 25,
+  "severities": [0.45],
+  "seeds": [56301, 56302, 56303],
+  "evidence_scope": "CENSORING_AWARE_DEVELOPMENT_VALIDATION_ONLY",
+  "paper_equivalence_claim_permitted": false
+}

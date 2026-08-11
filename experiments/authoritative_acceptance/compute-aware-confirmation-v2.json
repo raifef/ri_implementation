@@ -1,0 +1,50 @@
+{
+  "schema_version": "benchmark-launch.v2",
+  "protocol": {
+    "protocol_id": "hdfa-rl-compute-aware-confirmation.v2",
+    "path": "experiments/authoritative_acceptance/compute-aware-confirmation-v2.md",
+    "sha256": "a98adf0c968891c140c9f53d40de722c81a22e7dcc4c2737e02987d15066e4a8"
+  },
+  "primary_only": true,
+  "scenario_ids": [
+    "confirmatory_periodic_mixture",
+    "confirmatory_semi_markov",
+    "confirmatory_ou_step",
+    "confirmatory_nested_common",
+    "confirmatory_heavy_tailed"
+  ],
+  "benchmark": {
+    "qubit_count": 5,
+    "intervals": 32,
+    "cycles_per_interval": 512,
+    "seeds": [
+      3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008,
+      3009, 3010, 3011, 3012, 3013, 3014, 3015, 3016
+    ],
+    "code_distance": 3,
+    "candidate_cycles": 2048,
+    "steady_state_intervals": 2,
+    "cycle_period_s": 0.00001,
+    "censoring_limit_intervals": null,
+    "logical_shots_per_interval": 4096,
+    "logical_rounds": 3,
+    "bootstrap_characterization_shots": 384,
+    "bootstrap_validation_cycles": 512,
+    "bootstrap_target_stddev": 0.035,
+    "bootstrap_qec_rate_limit": 0.1,
+    "bootstrap_block_familywise_alpha": 0.0001,
+    "pre_disturbance_baseline_cycles": 512,
+    "minimum_fit_r2": 0.8,
+    "maximum_fit_residual_autocorrelation": 0.5,
+    "maximum_gamma_relative_standard_error": 1.0,
+    "final_rate_noninferiority_margin": 0.005,
+    "e2e_rmst_horizon_s": 8.0,
+    "minimum_compute_independent_seeds": 16,
+    "compute_bootstrap_replicates": 10000,
+    "compute_bootstrap_seed": 20260802,
+    "compute_one_sided_confidence": 0.95,
+    "e2e_tail_quantile": 0.95,
+    "e2e_tail_noninferiority_margin_s": 0.25,
+    "authoritative": true
+  }
+}

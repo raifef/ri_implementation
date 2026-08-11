@@ -1,0 +1,64 @@
+{
+  "schema_version": "google-pure-v13-protocol.v1",
+  "sensitivity_calibration": {
+    "displacements_native": [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0],
+    "qec_cycles_per_displacement": 5000000,
+    "seed": 63101,
+    "kappa_ref_edr_percentage_points": 1.0,
+    "kappa_source_status": "SOURCE_LITERAL",
+    "quadratic_minimum_r_squared": 0.9,
+    "residual_noise_upper_z": 3.3,
+    "maximum_sign_asymmetry_z": 3.0,
+    "conditioning_relative_tolerance": 0.2
+  },
+  "branch_comparison": {
+    "step_seeds": [57301, 57302, 57303],
+    "recovery_seeds": [56301, 56302, 56303],
+    "step_epochs": 720,
+    "step_onset_epoch": 60,
+    "recovery_epochs": 1000,
+    "candidates_per_epoch": 16,
+    "cycles_per_candidate": 36000,
+    "entropy_coefficient": 0.001
+  },
+  "figure5b_validation": {
+    "distances": [3, 5, 7],
+    "parameters_per_gate": [1, 10, 30],
+    "seeds": [63201],
+    "epochs": 512,
+    "candidates_per_epoch": 16,
+    "cycles_per_candidate": 36000,
+    "entropy_coefficient": 0.001,
+    "local_fit_min_distance": 0.0001,
+    "local_fit_max_distance": 0.7,
+    "minimum_local_points": 20
+  },
+  "step_fit": {
+    "bootstrap_repetitions": 1000,
+    "bootstrap_seed": 63301,
+    "minimum_r_squared": 0.9,
+    "timescale_consistency_relative_tolerance": 0.3,
+    "paper_characteristic_time_epochs": 130
+  },
+  "natural_drift_power": {
+    "two_sided_alpha": 0.05,
+    "power": 0.8,
+    "preregistered_suppressive_effect_db": -3.0,
+    "minimum_complete_runs": 6,
+    "maximum_planned_runs": 128,
+    "auto_execute": false
+  },
+  "detector_logical_alignment": {
+    "shots_per_evaluation": 5000,
+    "finite_difference_delta": 0.08,
+    "seed": 63401,
+    "minimum_cosine": 0.2
+  },
+  "long_runs": {
+    "auto_launch": false,
+    "explicit_execute_required": true
+  },
+  "final_evidence": false,
+  "paper_equivalence_claim_permitted": false,
+  "hdfa_comparison_permitted": false
+}

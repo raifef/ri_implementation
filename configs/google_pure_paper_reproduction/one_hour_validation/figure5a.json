@@ -1,0 +1,23 @@
+{
+  "profile_name": "ONE_HOUR_SCIENTIFIC_VALIDATION",
+  "epochs": 300,
+  "candidates": 20,
+  "checkpoint_every_candidates": 20,
+  "cycles_per_candidate": 36000,
+  "controls": 41,
+  "frequencies": [
+    0.0033333333333333335,
+    0.005,
+    0.006666666666666667,
+    0.01,
+    0.013333333333333334
+  ],
+  "entropy_coefficients": [
+    0.0031622776601683794,
+    0.01,
+    0.03162277660168379
+  ],
+  "seeds": [53301, 53302],
+  "evidence_scope": "LOCAL_STEERABILITY_VALIDATION_ONLY",
+  "paper_equivalence_claim_permitted": false
+}

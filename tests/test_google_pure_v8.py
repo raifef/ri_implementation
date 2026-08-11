@@ -1,12 +1,12 @@
 from pathlib import Path
 import numpy as np
 import pytest
-from google_rl_reimplementation.google_pure_v6.plant import default_spec
-from google_rl_reimplementation.google_pure_v6.policy import FactorizedGaussianPolicy
-from google_rl_reimplementation.google_pure_v6.update import ppo_objective_and_gradient
-from google_rl_reimplementation.google_pure_v8.contracts import normalized_edr_improvement,cost_decomposition,local_ratio,frequency_contract
-from google_rl_reimplementation.google_pure_v8.diagnostics import _freeze_batch,run_cell
-from google_rl_reimplementation.google_pure_v8.audits import audit_baselines,audit_native_units
+from hdfa_rl_suite.google_pure_v6.plant import default_spec
+from hdfa_rl_suite.google_pure_v6.policy import FactorizedGaussianPolicy
+from hdfa_rl_suite.google_pure_v6.update import ppo_objective_and_gradient
+from hdfa_rl_suite.google_pure_v8.contracts import normalized_edr_improvement,cost_decomposition,local_ratio,frequency_contract
+from hdfa_rl_suite.google_pure_v8.diagnostics import _freeze_batch,run_cell
+from hdfa_rl_suite.google_pure_v8.audits import audit_baselines,audit_native_units
 
 def test_edr_endpoints_and_affine_invariance():
  assert normalized_edr_improvement(4,4,2)==0 and normalized_edr_improvement(4,2,2)==1
@@ -38,9 +38,9 @@ def test_matched_finite_shot_policy_accounting():
 def test_frequency_units_and_native_contracts():
  x=frequency_contract(.25);assert x["period_epochs"]==4 and x["angular_frequency_radians_per_epoch"]==pytest.approx(np.pi/2)
  assert audit_native_units()["classification"]=="PASS" and audit_baselines()["classification"]=="PASS"
-def test_pure_v8_has_no_outside_workflow_controller_imports():
- text="\n".join(p.read_text(encoding="utf-8") for p in Path("src/google_rl_reimplementation/google_pure_v8").glob("*.py"));assert "google_rl_reimplementation.stage" not in text and "google_rl_reimplementation.product" not in text
+def test_pure_v8_has_no_staged_controller_imports():
+ text="\n".join(p.read_text(encoding="utf-8") for p in Path("src/hdfa_rl_suite/google_pure_v8").glob("*.py"));assert "hdfa_rl_suite.stage" not in text and "hdfa_rl_suite.product" not in text
 def test_all_v8_cli_entries_registered():
  text=Path("pyproject.toml").read_text(encoding="utf-8")
  for name in ("snapshot","audit-mathematical-contracts","audit-figure5a-edr","run-figure5a-feasibility","audit-exploration-floor","audit-entropy-scale","audit-native-units","audit-clipping-likelihood","audit-ppo-lifecycle","audit-baselines","audit-temporal-protocol","run-compact-fault-matrix","report-root-cause","status"):
-  assert f"google-rl-v8-{name} =" in text
+  assert f"hdfa-google-v8-{name} =" in text

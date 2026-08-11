@@ -1,0 +1,14 @@
+{
+  "profile_name": "ONE_HOUR_SCIENTIFIC_VALIDATION",
+  "epochs": 256,
+  "candidates": 16,
+  "cycles_per_candidate": 36000,
+  "entropy_coefficient": 0.001,
+  "distances": [3, 5, 7, 9, 11, 13, 15],
+  "parameters_per_gate": [1, 10, 30],
+  "seeds": [54301, 54302],
+  "local_fit_min_distance": 0.0001,
+  "local_fit_max_distance": 0.7,
+  "evidence_scope": "FULL_GEOMETRY_DEVELOPMENT_VALIDATION_ONLY",
+  "paper_equivalence_claim_permitted": false
+}

@@ -5,23 +5,23 @@ import json
 import numpy as np
 import pytest
 
-from google_rl_reimplementation.google_reproduction.audit import forensic_audit
-from google_rl_reimplementation.google_reproduction.config import (
+from hdfa_rl_suite.google_reproduction.audit import forensic_audit
+from hdfa_rl_suite.google_reproduction.config import (
     load_reference_config,
     repository_root,
 )
-from google_rl_reimplementation.google_reproduction.experiments import _make_agent, run_scaling
-from google_rl_reimplementation.google_reproduction.reference_agent import (
+from hdfa_rl_suite.google_reproduction.experiments import _make_agent, run_scaling
+from hdfa_rl_suite.google_reproduction.reference_agent import (
     DetectorEvidence,
     ReferenceAgent,
     local_policy_ratios,
 )
-from google_rl_reimplementation.google_reproduction.reporting import public_anchor_registry
-from google_rl_reimplementation.google_reproduction.surrogate import (
+from hdfa_rl_suite.google_reproduction.reporting import public_anchor_registry
+from hdfa_rl_suite.google_reproduction.surrogate import (
     PaperAnchoredSurrogate,
     surface_code_parameter_count,
 )
-from google_rl_reimplementation.google_reproduction.validation import validate_surrogate
+from hdfa_rl_suite.google_reproduction.validation import validate_surrogate
 
 
 def _agent(seed=7901):
@@ -42,8 +42,8 @@ def _evidence(plant, batch, *, regime=None, action_hashes=None):
 
 
 def test_v2_reference_is_separate_from_legacy():
-    import google_rl_reimplementation.google_reproduction.reference_agent as reference
-    import google_rl_reimplementation.google_rl_certification.agent as legacy
+    import hdfa_rl_suite.google_reproduction.reference_agent as reference
+    import hdfa_rl_suite.google_rl_certification.agent as legacy
 
     assert reference.__file__ != legacy.__file__
     assert "google_rl_certification" not in inspect.getsource(reference)

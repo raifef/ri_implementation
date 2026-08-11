@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from google_rl_reimplementation.google_pure_paper_reproduction.claim_registry import claims
-from google_rl_reimplementation.google_pure_paper_reproduction.experiment_families import (
+from hdfa_rl_suite.google_pure_paper_reproduction.claim_registry import claims
+from hdfa_rl_suite.google_pure_paper_reproduction.experiment_families import (
     EvidenceClass,
     ExperimentFamily,
     assert_claim_compatible,
@@ -14,15 +14,20 @@ from google_rl_reimplementation.google_pure_paper_reproduction.experiment_famili
     final_evidence_allowed,
     guard_seed,
 )
-from google_rl_reimplementation.google_pure_paper_reproduction.paper_figures import build_protocol, default_config
-from google_rl_reimplementation.google_pure_paper_reproduction.reporting import audit_pure_namespace
-from google_rl_reimplementation.google_pure_paper_reproduction.source_registry import source_contract
-from google_rl_reimplementation.google_pure_paper_reproduction.sparse_scaling import total_controls
-from google_rl_reimplementation.google_pure_paper_reproduction.storage import REQUIRED_DIRS
+from hdfa_rl_suite.google_pure_paper_reproduction.paper_figures import (
+    acquire,
+    assigned_conditions,
+    build_protocol,
+    default_config,
+)
+from hdfa_rl_suite.google_pure_paper_reproduction.reporting import audit_pure_namespace
+from hdfa_rl_suite.google_pure_paper_reproduction.source_registry import source_contract
+from hdfa_rl_suite.google_pure_paper_reproduction.sparse_scaling import total_controls
+from hdfa_rl_suite.google_pure_paper_reproduction.storage import REQUIRED_DIRS
 
 
 def test_required_package_surface_exists() -> None:
-    package = Path("src/google_rl_reimplementation/google_pure_paper_reproduction")
+    package = Path("src/hdfa_rl_suite/google_pure_paper_reproduction")
     required = {
         "__init__.py", "source_registry.py", "claim_registry.py", "experiment_families.py", "provenance.py",
         "public_data.py", "paper_figures.py", "paper_tables.py", "panel_a.py", "panel_b.py", "panel_c.py",
@@ -94,9 +99,125 @@ def test_protocols_preserve_paper_geometry_and_controller_hash() -> None:
     assert panel_b["distances"] == [3, 15]
 
 
+def test_worker_condition_partitions_are_disjoint_complete_and_stable() -> None:
+    protocol = build_protocol(ExperimentFamily.FIGURE5A_REAL_TIME_STEERING.value, mode="smoke")
+    partitions = [assigned_conditions(protocol, worker_index=index, worker_count=4)
+                  for index in range(4)]
+    indices = [index for partition in partitions for index, _ in partition]
+    assert sorted(indices) == list(range(protocol["condition_count"]))
+    assert len(indices) == len(set(indices))
+    assert partitions == [assigned_conditions(protocol, worker_index=index, worker_count=4)
+                          for index in range(4)]
+    with pytest.raises(ValueError, match="at least one"):
+        assigned_conditions(protocol, worker_count=0)
+    with pytest.raises(ValueError, match="worker_index"):
+        assigned_conditions(protocol, worker_index=4, worker_count=4)
+
+
+def test_worker_acquisition_skips_existing_assigned_shards(monkeypatch) -> None:
+    import hdfa_rl_suite.google_pure_paper_reproduction.paper_figures as figures
+    from hdfa_rl_suite.google_pure_v7.config import canonical_hash
+
+    conditions = [{"seed": seed} for seed in range(4)]
+    protocol = {"mode": "smoke", "experiment_family": "TEST_FAMILY",
+                "protocol_hash": "protocol", "conditions": conditions,
+                "condition_count": len(conditions)}
+    existing_condition = conditions[1]
+    existing_identity = {"family": "TEST_FAMILY", "protocol_hash": "protocol",
+                         "condition": existing_condition}
+    existing_id = canonical_hash(existing_identity)
+    executed = []
+
+    class Module:
+        @staticmethod
+        def acquire_condition(_protocol, condition):
+            executed.append(condition)
+            return {"seed": condition["seed"]}
+
+    monkeypatch.setattr(figures, "discover", lambda _protocol: [{"shard_id": existing_id}])
+    monkeypatch.setattr(figures, "_module", lambda _family: Module)
+    monkeypatch.setattr(figures, "write_shard", lambda _protocol, condition, _data: {
+        "shard_id": canonical_hash({"family": "TEST_FAMILY", "protocol_hash": "protocol",
+                                    "condition": condition})})
+    monkeypatch.setattr(figures, "atomic_json", lambda _path, _value: None)
+    result = acquire(protocol, worker_index=1, worker_count=2)
+    assert executed == [conditions[3]]
+    assert result["assigned_shards"] == 2
+    assert result["preexisting_assigned_shards"] == 1
+    assert result["completed_this_call"] == 1
+
+
+def test_one_hour_profile_is_bounded_complete_geometry_and_nonfinal() -> None:
+    from hdfa_rl_suite.google_pure_paper_reproduction.hourly_workflow import (
+        build_one_hour_protocols,
+        profile_plan,
+    )
+
+    protocols = build_one_hour_protocols()
+    plan = profile_plan(protocols, max_workers=6)
+    assert plan["mode"] == "validation"
+    assert plan["final_evidence"] is False
+    assert plan["paper_equivalence_claim_permitted"] is False
+    assert plan["literal_paper_budget_preserved"] is False
+    assert plan["estimated_wall_minutes"] == [35, 55]
+    assert plan["calibration_observed_seconds"]["figure5a_representative_cell"] == 305.92
+    assert len(plan["families"]) == 6
+    by_family = {row["experiment_family"]: row for row in plan["families"]}
+    assert by_family["FIGURE5A_REAL_TIME_STEERING"]["conditions"] == 30
+    assert by_family["FIGURE5B_SPARSE_SCALING"]["conditions"] == 42
+    assert by_family["FIGURE5C_CONVERGENCE_LAW"]["conditions"] == 42
+    assert by_family["NATURAL_DRIFT_SPECTRAL_SUPPRESSION"]["conditions"] == 6
+    assert by_family["FIGURE5A_REAL_TIME_STEERING"]["checkpoint_every_candidates"] == 20
+    assert by_family["STEP_RESPONSE_INJECTED_DRIFT"]["record_storage"] == "compact_directional"
+    assert all(row["cycles_per_candidate"] == 36_000 for row in plan["families"])
+    assert all(protocol["mode"] == "validation" for protocol in protocols)
+    assert all(protocol["config"]["paper_equivalence_claim_permitted"] is False
+               for protocol in protocols)
+
+
+def test_one_hour_profile_refuses_oversubscription() -> None:
+    from hdfa_rl_suite.google_pure_paper_reproduction.hourly_workflow import profile_plan
+
+    with pytest.raises(ValueError, match="max_workers"):
+        profile_plan([], max_workers=7)
+
+
+def test_one_hour_worker_failure_is_attributed_and_persisted(monkeypatch, tmp_path) -> None:
+    import concurrent.futures
+    from hdfa_rl_suite.google_pure_paper_reproduction import hourly_workflow
+
+    protocol = {
+        "experiment_family": "TEST_FAMILY",
+        "protocol_hash": "test-protocol",
+        "condition_count": 1,
+        "conditions": [{"seed": 17, "frequency": 0.01}],
+    }
+
+    def fail_acquisition(*_args, **_kwargs):
+        raise ValueError("candidate left physical action domain")
+
+    monkeypatch.setattr(hourly_workflow, "acquire", fail_acquisition)
+    monkeypatch.setattr(hourly_workflow, "ProcessPoolExecutor",
+                        concurrent.futures.ThreadPoolExecutor)
+    monkeypatch.setattr(hourly_workflow, "initialise_layout", lambda: tmp_path)
+
+    with pytest.raises(RuntimeError, match="TEST_FAMILY condition 0"):
+        hourly_workflow._run_acquisitions([protocol], max_workers=1)
+
+    manifest = json.loads(
+        (tmp_path / "reports/one_hour_validation_worker_failure.json").read_text(
+            encoding="utf-8"))
+    assert manifest["failure"]["experiment_family"] == "TEST_FAMILY"
+    assert manifest["failure"]["condition_index"] == 0
+    assert manifest["failure"]["exception_type"] == "ValueError"
+    assert manifest["failure"]["condition"] == protocol["conditions"][0]
+    assert manifest["remaining_work_cancelled"] is True
+    assert manifest["final_evidence"] is False
+
+
 def test_sparse_scaling_anchor_and_no_dense_allocation_contract() -> None:
     assert total_controls(15, 30) == 38670
-    source = Path("src/google_rl_reimplementation/google_pure_paper_reproduction/panel_b.py").read_text(encoding="utf-8")
+    source = Path("src/hdfa_rl_suite/google_pure_paper_reproduction/panel_b.py").read_text(encoding="utf-8")
     assert '"dense_parameter_matrix_allocated": False' in source
 
 
@@ -119,12 +240,12 @@ def test_all_cli_commands_registered() -> None:
     text = Path("pyproject.toml").read_text(encoding="utf-8")
     for suffix in ("fig5a", "fig5b", "fig5c", "natural-drift", "randomized-recovery", "step-response"):
         for action in ("plan", "acquire", "merge", "validate", "plot", "compare"):
-            assert f"google-rl-paper-{suffix}-{action} =" in text
-    assert 'version = "1.0.0"' in text
+            assert f"hdfa-google-paper-{suffix}-{action} =" in text
+    assert 'version = "0.12.0"' in text
 
 
 def test_prior_figure5_smoke_is_preserved_and_reclassified() -> None:
-    from google_rl_reimplementation.google_pure_paper_reproduction.reporting import reclassify_prior_figure5_smoke
+    from hdfa_rl_suite.google_pure_paper_reproduction.reporting import reclassify_prior_figure5_smoke
     result = reclassify_prior_figure5_smoke()
     assert result["classification"] == "SMOKE_RENDER_ONLY"
     assert result["source_deleted"] is False

@@ -1,0 +1,18 @@
+{
+  "primary_method_doi": "10.1103/PhysRevLett.133.150603",
+  "decoder_backend": "SPARSE_BLOSSOM_CORRELATED_MATCHING_TWO_STEP_REWEIGHTING",
+  "parameter_count": 964,
+  "candidates_per_epoch": 70,
+  "training_epochs": 220,
+  "policy_steps_per_epoch": 20,
+  "shots_per_epoch": 3500,
+  "initial_log_sigma": 0.3,
+  "learning_rate": 0.001,
+  "importance_clip": 0.4,
+  "gradient_clip": 0.1,
+  "entropy_coefficient": 0.01,
+  "physical_controls_frozen": true,
+  "paper_mode": true,
+  "launch_automatically": false,
+  "required_first_gate": "reproduce_2024_public_benchmark"
+}

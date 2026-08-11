@@ -1,0 +1,4 @@
+interface:
+  display_name: "HDFA-RL Architecture"
+  short_description: "Implement the staged HDFA and QEC-RL architecture"
+  default_prompt: "Use $hdfa-rl-architecture to implement the next HDFA-QEC-RL component."

@@ -1,0 +1,35 @@
+{
+  "schema_version": "benchmark-launch.v1",
+  "primary_only": true,
+  "scenario_ids": [
+    "sinusoid",
+    "telegraph",
+    "ou_step",
+    "nested_common",
+    "unknown"
+  ],
+  "benchmark": {
+    "qubit_count": 5,
+    "intervals": 32,
+    "cycles_per_interval": 512,
+    "seeds": [101, 102, 103, 104, 105],
+    "code_distance": 3,
+    "candidate_cycles": 2048,
+    "steady_state_intervals": 2,
+    "cycle_period_s": 0.00001,
+    "censoring_limit_intervals": null,
+    "logical_shots_per_interval": 4096,
+    "logical_rounds": 3,
+    "bootstrap_characterization_shots": 384,
+    "bootstrap_validation_cycles": 512,
+    "bootstrap_target_stddev": 0.035,
+    "bootstrap_qec_rate_limit": 0.1,
+    "bootstrap_block_familywise_alpha": 0.0001,
+    "pre_disturbance_baseline_cycles": 512,
+    "minimum_fit_r2": 0.8,
+    "maximum_fit_residual_autocorrelation": 0.5,
+    "maximum_gamma_relative_standard_error": 1.0,
+    "final_rate_noninferiority_margin": 0.005,
+    "authoritative": true
+  }
+}

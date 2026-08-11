@@ -1,0 +1,29 @@
+{
+  "schema_version": "google-pure-v19-protocol.v1",
+  "mission": "stored-state diagnosis of destructive direct-sigma exploration",
+  "finite_difference_delta": 0.04,
+  "phase_bins": 8,
+  "diagnostic_states_per_frequency": 8,
+  "gauss_hermite_order": 5,
+  "bootstrap_draws": 2000,
+  "bootstrap_seed": 91901,
+  "frozen_sigma_multipliers": [0.0, 0.25, 0.5, 0.75, 1.0],
+  "quadratic_ratio_explained_interval": [0.5, 1.5],
+  "broad_effective_dimension_fraction": 0.5,
+  "dominant_top_10pct_fraction": 0.5,
+  "lambda_squared_minimum_r_squared": 0.9,
+  "mean_controller_retuning_permitted": false,
+  "production_figure5a_changes_permitted": false,
+  "repair_policy": "one causally justified development-only repair after classification",
+  "public_analogue_entropy_reduction": "mean over active coordinates",
+  "automatic_campaigns_permitted": [],
+  "forbidden_auto_runs": [
+    "source-budget",
+    "heldout",
+    "reference",
+    "natural-drift",
+    "figure5c",
+    "paired-acceptance",
+    "long-three-frequency-acquisition"
+  ]
+}

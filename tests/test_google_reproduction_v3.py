@@ -7,23 +7,23 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from google_rl_reimplementation.google_reproduction_v3.dataset_manifest import hash_archive_once
-from google_rl_reimplementation.google_reproduction_v3.estimators import (
+from hdfa_rl_suite.google_reproduction_v3.dataset_manifest import hash_archive_once
+from hdfa_rl_suite.google_reproduction_v3.estimators import (
     error_per_cycle_to_memory_failure,
     independent_nonlinear_decay_estimator,
     memory_failure_to_error_per_cycle,
     repository_decay_estimator,
 )
-from google_rl_reimplementation.google_reproduction_v3.preprocessing import summarize_stim_circuit
-from google_rl_reimplementation.google_reproduction_v3.reporting import canonical_hash
-from google_rl_reimplementation.google_reproduction_v3.schemas import (
+from hdfa_rl_suite.google_reproduction_v3.preprocessing import summarize_stim_circuit
+from hdfa_rl_suite.google_reproduction_v3.reporting import canonical_hash
+from hdfa_rl_suite.google_reproduction_v3.schemas import (
     CERTIFICATION_SEEDS,
     ReproductionStatus,
     SurrogateValidationOutcome,
 )
-from google_rl_reimplementation.google_reproduction_v3.spectral import power_ratio_db
-from google_rl_reimplementation.google_reproduction_v3.surrogate import EmpiricalStaticSurrogate
-from google_rl_reimplementation.google_reproduction_v3.zenodo_loader import ZenodoArchive, build_fixture_zip
+from hdfa_rl_suite.google_reproduction_v3.spectral import power_ratio_db
+from hdfa_rl_suite.google_reproduction_v3.surrogate import EmpiricalStaticSurrogate
+from hdfa_rl_suite.google_reproduction_v3.zenodo_loader import ZenodoArchive, build_fixture_zip
 
 
 def test_allowed_status_vocabularies_are_frozen() -> None:
@@ -125,7 +125,7 @@ def test_split_hash_is_deterministic_and_certification_seeds_untouched() -> None
 
 
 def test_faster_v2_results_are_not_labelled_algorithm_failure() -> None:
-    source = Path("src/google_rl_reimplementation/google_reproduction_v3/reporting.py").read_text(encoding="utf-8")
+    source = Path("src/hdfa_rl_suite/google_reproduction_v3/reporting.py").read_text(encoding="utf-8")
     assert '"randomized_recovery"' in source
     assert '"classification": "TASK_NOT_COMMENSURABLE"' in source
     assert "526 epochs is faster, not worse" in source

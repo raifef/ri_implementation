@@ -1,0 +1,17 @@
+{
+  "profile_name": "ONE_HOUR_SCIENTIFIC_VALIDATION",
+  "epochs": 510,
+  "candidates": 12,
+  "cycles_per_candidate": 36000,
+  "controls": 41,
+  "plant_indices": [0, 1, 2, 3, 4, 5],
+  "seeds": [55301, 55302, 55303, 55304, 55305, 55306],
+  "evaluation_cadence_epochs": 5,
+  "warmup_epoch": 150,
+  "logical_evaluation_shots": 512,
+  "shared_grid_points": 256,
+  "gaussian_smoothing_sigma_bins": 5.0,
+  "entropy_coefficient": 0.001,
+  "evidence_scope": "SIX_PLANT_PAIRED_DFT_VALIDATION_ONLY",
+  "paper_equivalence_claim_permitted": false
+}

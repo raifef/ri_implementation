@@ -1,0 +1,16 @@
+{
+  "profile_name": "ONE_HOUR_SCIENTIFIC_VALIDATION",
+  "epochs": 720,
+  "onset_epoch": 60,
+  "direction_coordinate": 0,
+  "candidates": 16,
+  "checkpoint_every_candidates": 16,
+  "compact_records": true,
+  "cycles_per_candidate": 36000,
+  "controls": 924,
+  "entropy_coefficient": 0.001,
+  "severities": [0.5],
+  "seeds": [57301, 57302, 57303],
+  "evidence_scope": "TARGET_RELATIVE_RESPONSE_VALIDATION_ONLY",
+  "paper_equivalence_claim_permitted": false
+}

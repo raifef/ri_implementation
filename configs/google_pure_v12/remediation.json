@@ -1,0 +1,28 @@
+{
+  "schema_version": "google-pure-v12-remediation-config.v1",
+  "audit": {
+    "finite_difference_deltas": [0.001, 0.003, 0.01, 0.03],
+    "bootstrap_repetitions": 2000,
+    "bootstrap_seed": 61201,
+    "audit_seed": 61202
+  },
+  "reduced_directional_comparison": {
+    "step": {"epochs": 720, "onset_epoch": 60, "candidates": 16, "cycles_per_candidate": 36000, "seeds": [57301, 57302, 57303], "target_delta": 0.5},
+    "recovery": {"epochs": 1000, "candidates": 16, "cycles_per_candidate": 36000, "seeds": [56301, 56302, 56303], "spoil_magnitude": 0.45},
+    "reference_curvature_rule": "median_frozen_figure5a_omega_times_detector_degree",
+    "amendment": "APPLY_EMPIRICAL_EDR_SENSITIVITY_ONCE_AT_NORMALIZED_TO_NATIVE_BOUNDARY"
+  },
+  "natural_drift": {
+    "power_ratio_convention": "10*log10(P_learned/P_fixed)",
+    "negative_means": "suppression",
+    "low_frequency_bins": 64,
+    "uncertainty_resampling_unit": "run_id",
+    "strong_effect_db": 3.0
+  },
+  "long_run_policy": {
+    "auto_launch": false,
+    "paper_scale_requires_explicit_authorization": true
+  },
+  "final_evidence": false,
+  "paper_equivalence_claim_permitted": false
+}

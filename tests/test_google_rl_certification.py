@@ -1,17 +1,24 @@
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
-from google_rl_reimplementation.google_rl_certification.agent import (
+from hdfa_rl_suite.baselines.controllers import FullControlRLArm
+from hdfa_rl_suite.google_rl_certification.agent import (
     CandidateEvaluation,
     GaussianPolicyGradientAgent,
 )
-from google_rl_reimplementation.google_rl_certification.analytic_landscape import (
+from hdfa_rl_suite.google_rl_certification.analytic_landscape import (
     run_analytic_certification,
 )
-from google_rl_reimplementation.google_rl_certification.config import named_config
-from google_rl_reimplementation.google_rl_certification.static_detector_landscape import (
+from hdfa_rl_suite.google_rl_certification.config import named_config
+from hdfa_rl_suite.google_rl_certification.static_detector_landscape import (
     make_static_landscape,
 )
+from hdfa_rl_suite.simulator import DriftKind, LatentProcessSpec, ScalableQECDevice, SimulatorConfig
+from hdfa_rl_suite.stage0.schema import PolicySnapshot
+from hdfa_rl_suite.stage6 import ExplorationBudget, FullControlDetectorRL
+from hdfa_rl_suite.stage6.schema import CandidateObservation
 
 
 def _agent(configuration: str = "high_shot_reference", seed: int = 7):
@@ -35,6 +42,16 @@ def _evaluations(landscape, batch):
         for index, candidate_id in enumerate(batch.candidate_ids)
     )
 
+
+def _device(seed: int = 91):
+    return ScalableQECDevice(SimulatorConfig(
+        qubit_count=3,
+        seed=seed,
+        controller_latency_s=0.0,
+        stationary_vectorized_acquisition=True,
+        processes=(LatentProcessSpec(
+            "stationary", DriftKind.CONSTANT, {}, amplitude=0.0),),
+    ))
 
 
 def test_public_high_shot_sampling_structure_is_exact_and_versioned():
@@ -141,3 +158,52 @@ def test_agents_do_not_share_policy_state_between_arms():
     np.testing.assert_array_equal(second.mean, second_before)
     assert not np.shares_memory(first.mean, second.mean)
 
+
+def test_legacy_full_control_is_not_labelled_faithful():
+    assert "faithful" not in (FullControlDetectorRL.__doc__ or "").lower()
+    assert "legacy" in (FullControlDetectorRL.__doc__ or "").lower()
+
+
+def test_legacy_candidate_count_is_not_silently_changed():
+    device = _device()
+    snapshot = PolicySnapshot(
+        dict(device.confirmed_policy.controls), device.confirmed_policy.policy_hash,
+        device.now_s)
+    with pytest.raises(ValueError, match="even and at least four"):
+        FullControlDetectorRL(
+            device.limits, device.detector_control_graph, snapshot,
+            ExplorationBudget(1.0, 100.0), candidate_count=5)
+
+
+def test_stale_candidate_rewards_do_not_update_legacy_policy():
+    device = _device(seed=93)
+    snapshot = PolicySnapshot(
+        dict(device.confirmed_policy.controls), device.confirmed_policy.policy_hash,
+        device.now_s)
+    controller = FullControlDetectorRL(
+        device.limits, device.detector_control_graph, snapshot,
+        ExplorationBudget(10.0, 1000.0), candidate_count=4, seed=3)
+    candidates = controller.propose()
+    observations = tuple(CandidateObservation(
+        candidate.candidate_id,
+        {detector: (.01 if candidate.sign > 0 else .20)
+         for detector in device.detector_control_graph},
+        {detector: 100 for detector in device.detector_control_graph},
+        observed_at_s=controller.proposed_package.activation_time_s+10.0,
+    ) for candidate in candidates)
+    before = dict(controller.current_policy.values)
+    result = controller.update(observations)
+    assert result.policy_version == 0
+    assert result.replay_size == 0
+    assert all(value == 0.0 for value in result.gradient.values())
+    assert dict(controller.current_policy.values) == before
+    assert result.exploration_damage > 0  # stale data are excluded, physical damage is not hidden
+
+
+def test_reduced_budget_label_requires_track_a():
+    result = FullControlRLArm(
+        seed=97, candidate_count=4, candidate_cycles=2048,
+        damage_budget=100.0, per_candidate_damage_budget=10.0,
+    ).run_interval(_device(seed=97), cycles=16, interval=0)
+    assert result.candidate_budget_class == "reduced-budget-candidate"
+    assert result.candidate_budget_class != "validated-reduced-budget"
