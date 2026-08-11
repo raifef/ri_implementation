@@ -9,6 +9,8 @@ from pathlib import Path
 import time
 from typing import Any
 
+import numpy as np
+
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.contracts import PositivityGuard
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import (
     GradientClippingMode,
@@ -73,13 +75,26 @@ def plan(config_path: Path, output: Path, *, mode: AcquisitionMode, scan: str) -
     candidate_cycles = conditions * protocol.candidate_qec_cycles
     shots = total_cycles // protocol.circuit_rounds
     estimate = shots / float(config["planning"]["estimated_stim_shots_per_second"])
-    compilation_count = conditions * protocol.epochs * protocol.candidates_per_epoch * 4
+    compilation_count = conditions * protocol.epochs * (
+        protocol.candidates_per_epoch + 3)
+    aggregate_detector_sample_bytes = (
+        protocol.candidates_per_epoch * protocol.shots_per_policy *
+        plant.raw_detector_count * np.dtype(np.bool_).itemsize)
+    controller_batch_bytes = protocol.candidates_per_epoch * 41 * 8 * 12
     payload = {**contract, "created_at": datetime.now(timezone.utc).isoformat(),
                "config_hash": file_sha256(config_path), "control_count": plant.control_count,
                "candidate_training_qec_cycles": candidate_cycles,
                "four_stream_total_qec_cycles": total_cycles, "Stim_shots": shots,
                "circuit_compilations": compilation_count, "estimated_sampling_seconds_lower_bound": estimate,
-               "estimated_peak_memory_bytes": protocol.candidates_per_epoch * 41 * 8 * 12,
+               "naive_unaggregated_circuit_compilations":
+                   conditions * protocol.epochs * protocol.candidates_per_epoch * 4,
+               "circuit_compilation_reduction_factor":
+                   (protocol.candidates_per_epoch * 4) /
+                   (protocol.candidates_per_epoch + 3),
+               "diagnostic_stream_aggregation": "three epoch-constant streams compiled once per epoch",
+               "estimated_peak_detector_sample_bytes": aggregate_detector_sample_bytes,
+               "estimated_peak_memory_bytes":
+                   aggregate_detector_sample_bytes + controller_batch_bytes,
                "estimated_storage_bytes": conditions * protocol.epochs * protocol.candidates_per_epoch * 28 * 6,
                "checkpoint_directory": str((output / "checkpoints" / mode.value / scan).resolve()),
                "reference_launch_requires_explicit_allow": mode == AcquisitionMode.REFERENCE,
@@ -87,7 +102,7 @@ def plan(config_path: Path, output: Path, *, mode: AcquisitionMode, scan: str) -
                    mode == AcquisitionMode.REFERENCE and
                    not config["controller"]["reference_hyperparameters_frozen"]),
                "certification_seeds_consumed_by_plan": False,
-               "warning": "sampling estimate excludes candidate-specific Stim compilation and JSON checkpoint I/O"}
+               "warning": "sampling estimate excludes Stim compilation and JSON checkpoint I/O"}
     atomic_json(output / "plans" / f"{mode.value}_{scan}.json", payload)
     return payload
 

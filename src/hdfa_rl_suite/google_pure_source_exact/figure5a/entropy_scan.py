@@ -6,7 +6,8 @@ from typing import Any, Mapping, Sequence
 
 import numpy as np
 
-from .contracts import AcquisitionMode, Figure5aProtocol, SOURCE_ENTROPY_ANCHORS, canonical_hash
+from .contracts import (DIAGNOSTIC_STREAM_ACQUISITION_CONTRACT, AcquisitionMode,
+                        Figure5aProtocol, SOURCE_ENTROPY_ANCHORS, canonical_hash)
 
 
 def build_conditions(config: Mapping[str, Any], *, mode: AcquisitionMode,
@@ -34,6 +35,8 @@ def scan_contract(config: Mapping[str, Any], *, mode: AcquisitionMode, scan: str
     payload = {"schema_version": "figure5a-scan-contract.v1", "mode": mode.value,
                "scan": scan, "protocol_hash": protocol.protocol_hash,
                "plant_hash": plant_hash, "controller_hash": controller_hash,
+               "diagnostic_stream_acquisition_contract":
+                   DIAGNOSTIC_STREAM_ACQUISITION_CONTRACT,
                "conditions": conditions, "condition_count": len(conditions),
                "validation_watermark": mode != AcquisitionMode.REFERENCE,
                "one_frozen_controller_and_plant": True}

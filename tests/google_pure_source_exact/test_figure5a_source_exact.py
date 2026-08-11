@@ -250,7 +250,7 @@ def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plan
     assert boundary_resumed["epoch_records"] == mono["epoch_records"]
     assert resumed["no_candidates_dropped"]
     assert resumed["candidate_boundaries_completed"] == 6
-    assert resumed["schema_version"] == "figure5a-cell.v4"
+    assert resumed["schema_version"] == "figure5a-cell.v5"
     assert resumed["raw_detector_count"] > resumed["detector_count"]
     assert resumed["reward_representation"] == "time_translation_equivalence_class_mean_edr"
     assert resumed["gradient_clipping_contract"]["applied_before_momentum"]
@@ -261,8 +261,18 @@ def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plan
     assert not resumed["empirical_relative_normalization_applied"]
     assert not resumed["mean_bounds_applied"]
     assert not resumed["action_transform_uses_hidden_optimum"]
-    assert all(len(record["counts"][stream]) == 3 for record in resumed["epoch_records"]
-               for stream in ("fixed", "optimal", "stochastic", "learned_mean"))
+    assert all(len(record["counts"]["stochastic"]) == 3
+               for record in resumed["epoch_records"])
+    assert all(len(record["counts"][stream]) == 1 for record in resumed["epoch_records"]
+               for stream in ("fixed", "optimal", "learned_mean"))
+    assert resumed["circuit_compilations"] == 2 * (3 + 3)
+    assert resumed["stream_acquisition_contract"]["mode"] == \
+        "figure5a-finite-shot-epoch-aggregate.v1"
+    assert resumed["stream_acquisition_contract"]["all_four_stream_qec_budgets_unchanged"]
+    assert resumed["stream_acquisition_contract"]["stochastic_training_seed_contract_unchanged"]
+    assert not resumed["stream_acquisition_contract"]["exact_DEM_diagnostics_used"]
+    assert all(record["stream_acquisition"]["total_circuit_compilations"] == 6
+               for record in resumed["epoch_records"])
     assert all(record["action_execution"] == "identity_applied_gaussian"
                and record["likelihood_space"] == "applied_gaussian"
                and record["maximum_abs_gaussian_applied_delta"] == 0.0
@@ -272,6 +282,37 @@ def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plan
                for record in resumed["epoch_records"])
     assert all(record["gradient_clipping"]["gradient_clipping_mode"] == "none"
                for record in resumed["epoch_records"])
+
+    obsolete = json.loads((tmp_path / "mono.json").read_text(encoding="utf-8"))
+    obsolete["schema_version"] = "figure5a-cell-checkpoint.v4"
+    (tmp_path / "obsolete.json").write_text(json.dumps(obsolete), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="acquisition layout is obsolete"):
+        run_cell(**common, checkpoint_path=tmp_path / "obsolete.json", resume=True)
+
+
+def test_epoch_constant_streams_are_aggregated_without_changing_qec_budgets(
+        tmp_path, plant, monkeypatch) -> None:
+    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 1, 3, 50, plant.rounds)
+    optimizer = OptimizerConfig(0.08, 0.02, 0.08, minimum_sigma=0.002, maximum_sigma=0.8)
+    calls: list[int] = []
+    original = plant.sample_detector_observation
+
+    def recording_sample(*args, **kwargs):
+        calls.append(int(kwargs["qec_cycles"]))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(plant, "sample_detector_observation", recording_sample)
+    result = run_cell(
+        protocol=protocol, plant=plant, frequency=0.1, entropy_weight=0.01,
+        seed=102, optimizer_config=optimizer, initial_sigma=0.15,
+        dependency_hashes={"test": "frozen"}, controller_hash="test-controller",
+        checkpoint_path=tmp_path / "aggregated.json")
+    assert calls.count(50) == 3
+    assert calls.count(150) == 3
+    assert len(calls) == 6
+    assert sum(calls) == protocol.four_stream_qec_cycles
+    assert result["four_stream_qec_cycles"] == 4 * 3 * 50
+    assert result["circuit_compilations"] == 6
 
 
 def test_batched_checkpoint_flush_is_bit_exact(tmp_path, plant) -> None:
@@ -357,6 +398,9 @@ def test_reference_planner_reports_exact_cost(config, tmp_path) -> None:
     assert result["condition_count"] == 9
     assert result["candidate_training_qec_cycles"] == 9 * 1_800_000_000
     assert result["four_stream_total_qec_cycles"] == 9 * 7_200_000_000
+    assert result["circuit_compilations"] == 9 * 1000 * 53
+    assert result["naive_unaggregated_circuit_compilations"] == 9 * 1000 * 200
+    assert result["circuit_compilation_reduction_factor"] == pytest.approx(200 / 53)
     assert result["reference_launch_requires_explicit_allow"]
     assert result["reference_launch_blocked_by_unfrozen_hyperparameters"]
 

@@ -16,6 +16,7 @@ SOURCE_QEC_CYCLES_PER_CANDIDATE = 36_000
 SOURCE_CANDIDATE_QEC_CYCLES = 1_800_000_000
 SOURCE_ENTROPY_ANCHORS = (0.001, 0.01, 0.1)
 DIAGNOSTIC_ONLY = "DIAGNOSTIC_ONLY"
+DIAGNOSTIC_STREAM_ACQUISITION_CONTRACT = "figure5a-finite-shot-epoch-aggregate.v1"
 
 
 class SourceIdentifiability(StrEnum):
@@ -111,6 +112,7 @@ def ratio_from_raw_counts(stochastic: int, fixed: int, optimal: int) -> dict[str
 
 def build_source_contract() -> dict[str, Any]:
     literal = SourceIdentifiability.SOURCE_LITERAL
+    derived = SourceIdentifiability.SOURCE_DERIVED
     unspecified = SourceIdentifiability.SOURCE_UNSPECIFIED_PREREGISTERED
     fields = [
         {"field": "plant", "value": "distance-3 surface-code memory circuit in Stim", "status": literal,
@@ -127,6 +129,11 @@ def build_source_contract() -> dict[str, Any]:
          "status": literal, "source": "Supplement VI.A"},
         {"field": "policy_streams", "value": "fixed, instantaneous optimum, stochastic candidates, learned mean",
          "status": literal, "source": "Supplement VI.A"},
+        {"field": "diagnostic_stream_batching",
+         "value": "fixed, optimum, and learned-mean controls are each sampled once per epoch with K times the per-candidate shots; stochastic rewards remain K separate acquisitions",
+         "status": derived,
+         "source": "iid finite-shot aggregation equivalence for controls constant within an epoch",
+         "contract": DIAGNOSTIC_STREAM_ACQUISITION_CONTRACT},
         {"field": "performance_ratio", "value": "(N_stochastic-N_fixed)/(N_optimal-N_fixed)",
          "status": literal, "source": "Supplement VI.A"},
         {"field": "entropy_anchors", "value": list(SOURCE_ENTROPY_ANCHORS), "status": literal,

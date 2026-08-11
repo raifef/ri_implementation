@@ -18,13 +18,19 @@ from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer im
     OptimizerConfig,
 )
 
-from .contracts import Figure5aProtocol, atomic_json, canonical_hash, ratio_from_raw_counts
+from .contracts import (DIAGNOSTIC_STREAM_ACQUISITION_CONTRACT, Figure5aProtocol,
+                        atomic_json, canonical_hash, ratio_from_raw_counts)
 from .plant import Figure5aStimPlant
 
 
 STREAMS = ("fixed", "optimal", "stochastic", "learned_mean")
+DIAGNOSTIC_STREAMS = ("fixed", "optimal", "learned_mean")
+STOCHASTIC_STREAM = "stochastic"
 COORDINATE_CONTRACT = "SOURCE_GAUSSIAN_P_EQUALS_APPLIED_PLANT_P_V1"
-FIGURE5A_IMPLEMENTATION_VERSION = "figure5a-source-coordinate.v1"
+FIGURE5A_IMPLEMENTATION_VERSION = "figure5a-source-coordinate-aggregated-diagnostics.v2"
+CHECKPOINT_SCHEMA_VERSION = "figure5a-cell-checkpoint.v5"
+ARTIFACT_SCHEMA_VERSION = "figure5a-cell.v5"
+DIAGNOSTIC_ACQUISITION_MODE = DIAGNOSTIC_STREAM_ACQUISITION_CONTRACT
 
 
 def _new_state(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency: float,
@@ -32,7 +38,7 @@ def _new_state(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequenc
                optimizer: DirectSigmaOptimizer, baseline: np.ndarray,
                dependency_hashes: Mapping[str, str], controller_hash: str) -> dict[str, Any]:
     return {
-        "schema_version": "figure5a-cell-checkpoint.v4", "protocol": asdict(protocol),
+        "schema_version": CHECKPOINT_SCHEMA_VERSION, "protocol": asdict(protocol),
         "protocol_hash": protocol.protocol_hash, "plant_hash": plant.plant_hash,
         "frequency": float(frequency), "entropy_weight": float(entropy_weight), "seed": int(seed),
         "dependency_hashes": dict(dependency_hashes), "controller_hash": controller_hash,
@@ -112,6 +118,10 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
         if not resume:
             raise RuntimeError(f"checkpoint exists; pass resume=True: {checkpoint_path}")
         state = __import__("json").loads(checkpoint_path.read_text(encoding="utf-8"))
+        if state.get("schema_version") != CHECKPOINT_SCHEMA_VERSION:
+            raise RuntimeError(
+                "checkpoint acquisition layout is obsolete; start a fresh cell under the "
+                "epoch-aggregated diagnostic-stream contract")
         identity = (state["protocol_hash"], state["plant_hash"], state["frequency"],
                     state["entropy_weight"], state["seed"], state["dependency_hashes"],
                     state.get("controller_hash"), state.get("coordinate_contract"))
@@ -144,22 +154,35 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             plant, epoch=epoch, frequency=frequency,
             stochastic=np.asarray(active["applied_actions"])[-1],
             learned_mean=np.asarray(active["applied_behavior_mean"]))
+        if not all(active["counts"][stream] for stream in DIAGNOSTIC_STREAMS):
+            if any(active["counts"][stream] for stream in DIAGNOSTIC_STREAMS):
+                raise RuntimeError("partial epoch diagnostic-stream aggregation is invalid")
+            diagnostic_qec_cycles = (
+                protocol.candidates_per_epoch * protocol.qec_cycles_per_candidate)
+            for stream in DIAGNOSTIC_STREAMS:
+                observation = plant.sample_detector_observation(
+                    controls[stream], epoch=epoch, frequency=frequency,
+                    qec_cycles=diagnostic_qec_cycles,
+                    seed=plant.stream_seed(
+                        seed, f"{stream}:epoch-aggregate", epoch, 0),
+                    target_controls=optimum)
+                active["counts"][stream].append(observation.raw_total)
+            state["active_batch"] = active
+            atomic_json(checkpoint_path, state)
         while int(active["next_candidate"]) < protocol.candidates_per_epoch:
             candidate = int(active["next_candidate"])
             optimum, controls = source_controls_for_epoch(
                 plant, epoch=epoch, frequency=frequency,
                 stochastic=np.asarray(active["applied_actions"][candidate]),
                 learned_mean=np.asarray(active["applied_behavior_mean"]))
-            detector_counts: dict[str, np.ndarray] = {}
-            for stream in STREAMS:
-                observation = plant.sample_detector_observation(
-                    controls[stream], epoch=epoch, frequency=frequency,
-                    qec_cycles=protocol.qec_cycles_per_candidate,
-                    seed=plant.stream_seed(seed, stream, epoch, candidate),
-                    target_controls=optimum)
-                detector_counts[stream] = observation.reward_component_counts
-                active["counts"][stream].append(observation.raw_total)
-            active["stochastic_detector_counts"].append(detector_counts["stochastic"].tolist())
+            observation = plant.sample_detector_observation(
+                controls[STOCHASTIC_STREAM], epoch=epoch, frequency=frequency,
+                qec_cycles=protocol.qec_cycles_per_candidate,
+                seed=plant.stream_seed(seed, STOCHASTIC_STREAM, epoch, candidate),
+                target_controls=optimum)
+            active["counts"][STOCHASTIC_STREAM].append(observation.raw_total)
+            active["stochastic_detector_counts"].append(
+                observation.reward_component_counts.tolist())
             active["next_candidate"] = candidate + 1
             state["candidate_boundaries_completed"] += 1
             state["active_batch"] = active
@@ -218,6 +241,19 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             "policy_entropy": entropy(np.asarray(active["behavior_sigma"])),
             "counts": {stream: list(map(int, active["counts"][stream])) for stream in STREAMS},
             "stream_totals": {stream: int(sum(active["counts"][stream])) for stream in STREAMS},
+            "stream_acquisition": {
+                "mode": DIAGNOSTIC_ACQUISITION_MODE,
+                "stochastic_acquisitions": protocol.candidates_per_epoch,
+                "diagnostic_acquisitions": len(DIAGNOSTIC_STREAMS),
+                "total_circuit_compilations": protocol.candidates_per_epoch + len(DIAGNOSTIC_STREAMS),
+                "diagnostic_aggregation_factor": protocol.candidates_per_epoch,
+                "qec_cycles_per_stochastic_acquisition": protocol.qec_cycles_per_candidate,
+                "qec_cycles_per_diagnostic_acquisition":
+                    protocol.candidates_per_epoch * protocol.qec_cycles_per_candidate,
+                "all_four_stream_qec_budgets_unchanged": True,
+                "stochastic_training_seed_contract_unchanged": True,
+                "aggregate_count_distribution":
+                    "equal_in_distribution_to_sum_of_candidate_count_batches"},
             "stochastic_detector_counts": active["stochastic_detector_counts"],
             "reward_sigma_gradient_norm": loss.diagnostics["reward_sigma_gradient_norm"],
             "entropy_sigma_gradient_norm": loss.diagnostics["entropy_sigma_gradient_norm"],
@@ -263,7 +299,7 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             raise RuntimeError("reference cell has a zero finite-shot fixed/optimal denominator")
         ratios = learned_ratios = {"source_ratio": None, "positive_cost_ratio": None}
     artifact = {
-        "schema_version": "figure5a-cell.v4", "complete": True,
+        "schema_version": ARTIFACT_SCHEMA_VERSION, "complete": True,
         "protocol": state["protocol"], "protocol_hash": state["protocol_hash"],
         "plant_hash": plant.plant_hash, "dependency_hashes": dict(dependency_hashes),
         "controller_hash": controller_hash,
@@ -282,6 +318,16 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
         "mean_bounds_applied": False,
         "detector_count": plant.detector_count, "raw_detector_count": plant.raw_detector_count,
         "reward_representation": "time_translation_equivalence_class_mean_edr",
+        "stream_acquisition_contract": {
+            "mode": DIAGNOSTIC_ACQUISITION_MODE,
+            "stochastic_stream": "one finite-shot acquisition per sampled candidate",
+            "diagnostic_streams": list(DIAGNOSTIC_STREAMS),
+            "diagnostic_stream_execution":
+                "one finite-shot acquisition per epoch at candidates_per_epoch times the per-candidate QEC budget",
+            "diagnostic_controls_constant_within_epoch": True,
+            "all_four_stream_qec_budgets_unchanged": True,
+            "stochastic_training_seed_contract_unchanged": True,
+            "exact_DEM_diagnostics_used": False},
         "gradient_clipping_contract": {
             "mode": optimizer_config.gradient_clipping_mode.value,
             "threshold": optimizer_config.gradient_clip_threshold,
@@ -294,6 +340,8 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
         "epoch_records": epoch_records,
         "candidate_qec_cycles": protocol.candidate_qec_cycles,
         "four_stream_qec_cycles": protocol.four_stream_qec_cycles,
+        "circuit_compilations": protocol.epochs * (
+            protocol.candidates_per_epoch + len(DIAGNOSTIC_STREAMS)),
         "candidate_boundaries_completed": state["candidate_boundaries_completed"],
         "checkpoint_every_candidates": int(checkpoint_every_candidates),
         "no_candidates_dropped": state["candidate_boundaries_completed"] == protocol.epochs * protocol.candidates_per_epoch,
