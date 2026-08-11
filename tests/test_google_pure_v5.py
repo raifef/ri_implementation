@@ -7,23 +7,23 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from google_rl_reimplementation.google_pure_v5.accounting import acquisition_accounting
-from google_rl_reimplementation.google_pure_v5.baseline import DetectorBaseline
-from google_rl_reimplementation.google_pure_v5.config import CERTIFICATION_SEEDS, guard_seed, paper_scale, repository_root, source_choices
-from google_rl_reimplementation.google_pure_v5.experiments import validate_policy_schema
-from google_rl_reimplementation.google_pure_v5.factor_graph import compose_detector_local_ratios, global_policy_ratio
-from google_rl_reimplementation.google_pure_v5.injected_drift_test import generate_injected_tape
-from google_rl_reimplementation.google_pure_v5.natural_drift_spectral_test import generate_natural_drift, welch_psd
-from google_rl_reimplementation.google_pure_v5.policy import FactorizedGaussianPolicy, component_log_probability
-from google_rl_reimplementation.google_pure_v5.protocol import dependency_audit
-from google_rl_reimplementation.google_pure_v5.reference_agent import PureGoogleReferenceAgent, evidence_from_counts
-from google_rl_reimplementation.google_pure_v5.reward import detector_advantages, detector_rewards
-from google_rl_reimplementation.google_pure_v5.studies import run_certification, surface_code_control_count, surface_code_gate_count
-from google_rl_reimplementation.google_pure_v5.update import clipped_objective_and_gradient
-from google_rl_reimplementation.google_pure_v5.validation import audit_baseline, validate_algorithm
+from hdfa_rl_suite.google_pure_v5.accounting import acquisition_accounting
+from hdfa_rl_suite.google_pure_v5.baseline import DetectorBaseline
+from hdfa_rl_suite.google_pure_v5.config import CERTIFICATION_SEEDS, guard_seed, paper_scale, repository_root, source_choices
+from hdfa_rl_suite.google_pure_v5.experiments import validate_policy_schema
+from hdfa_rl_suite.google_pure_v5.factor_graph import compose_detector_local_ratios, global_policy_ratio
+from hdfa_rl_suite.google_pure_v5.injected_drift_test import generate_injected_tape
+from hdfa_rl_suite.google_pure_v5.natural_drift_spectral_test import generate_natural_drift, welch_psd
+from hdfa_rl_suite.google_pure_v5.policy import FactorizedGaussianPolicy, component_log_probability
+from hdfa_rl_suite.google_pure_v5.protocol import dependency_audit
+from hdfa_rl_suite.google_pure_v5.reference_agent import PureGoogleReferenceAgent, evidence_from_counts
+from hdfa_rl_suite.google_pure_v5.reward import detector_advantages, detector_rewards
+from hdfa_rl_suite.google_pure_v5.studies import run_certification, surface_code_control_count, surface_code_gate_count
+from hdfa_rl_suite.google_pure_v5.update import clipped_objective_and_gradient
+from hdfa_rl_suite.google_pure_v5.validation import audit_baseline, validate_algorithm
 
 
-def test_pure_google_runtime_has_no_outside_workflow_dependencies():
+def test_pure_google_runtime_has_no_staged_or_hdfa_dependencies():
     audit = dependency_audit()
     assert audit["status"] == "PASS", audit["violations"]
 
@@ -204,4 +204,4 @@ def test_required_v5_commands_registered():
         "run-steering-phase", "run-randomized-recovery", "run-convergence-scaling",
         "run-development-scorecard", "freeze-certification", "run-certification",
     ]
-    assert all(f"google-rl-v5-{command}" in text for command in commands)
+    assert all(f"hdfa-google-v5-{command}" in text for command in commands)

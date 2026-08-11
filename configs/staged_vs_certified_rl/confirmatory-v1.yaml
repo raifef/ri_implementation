@@ -1,0 +1,56 @@
+{
+  "censoring": "observed targets only; no fit extrapolation; safety termination is failure",
+  "confirmatory_seed_consumption": false,
+  "development_seed_list": [
+    6101,
+    6102,
+    6103
+  ],
+  "followup": "all arms retain the complete frozen interval horizon",
+  "long_acquisition_executed": false,
+  "plant_contract_hashes": {
+    "plant-a-google-anchored.v1": "9b5a96ad921df260fa64beb5b4ee9514168dd80cd7ac57b199325ab22f6be1be",
+    "plant-b-rich-calibration.v1": "bcec4f49b799c88bea4bbb256bbc21c52121207b3acec33f9bdfc85a69fef55e"
+  },
+  "primary_estimands": [
+    "final detector-rate noninferiority",
+    "logical-failure noninferiority",
+    "structured 50/75/90-percent observed recovery",
+    "integrated excess EDR",
+    "exploration damage",
+    "conditional residual value by stratum",
+    "periodic end-to-end logical utility"
+  ],
+  "resource_views": [
+    "matched_native_qec",
+    "matched_wall_clock",
+    "matched_final_quality"
+  ],
+  "rollback": "transactional rollback states remain distinct from physical restoration evidence",
+  "schema_version": "staged-vs-certified-rl-confirmatory-config.v1",
+  "seed_list": [
+    7101,
+    7102,
+    7103,
+    7104,
+    7105,
+    7106,
+    7107,
+    7108,
+    7109,
+    7110,
+    7111,
+    7112
+  ],
+  "status": "frozen_not_executed",
+  "thresholds": {
+    "detector_noninferiority_margin": 0.0015,
+    "logical_noninferiority_margin": 0.0002,
+    "minimum_candidate_efficiency_ratio": 10.0,
+    "minimum_excess_edr_ratio": 5.0,
+    "minimum_exploration_damage_ratio": 2.0,
+    "minimum_one_interval_recovery_fraction": 0.9,
+    "minimum_residual_relative_benefit": 0.05
+  },
+  "track_a_frozen_hash": "3c73af91107e48231091cae4493b8a86cb7154a93f2d0c82feee12d567bda622"
+}

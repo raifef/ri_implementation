@@ -1,0 +1,13 @@
+{
+  "schema_version": "natural-drift-dft-config.v1",
+  "cadence_epochs": 5,
+  "warmup_epoch": 150,
+  "shared_grid_points": 256,
+  "gaussian_smoothing_sigma_bins": 5.0,
+  "power_normalization": "ABS_DFT_SQUARED_OVER_N_SQUARED",
+  "filter_ratio": "LEARNED_OVER_FIXED",
+  "development_seeds": [84001, 84002, 84003, 84004],
+  "certification_seeds_reserved": [84901, 84902, 84903, 84904],
+  "public_release_inventory": "artifacts/google_reproduction_v3/zenodo_inventory.json",
+  "public_dynamic_trace_status": "NOT_PUBLICLY_IDENTIFIABLE"
+}

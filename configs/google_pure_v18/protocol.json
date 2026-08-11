@@ -1,0 +1,94 @@
+{
+  "schema_version": "google-pure-v18-protocol.v1",
+  "mission": "minimum fresh periodic data for Figure 5a transfer identification",
+  "heldout_seeds": [],
+  "optimizer_changes_permitted": false,
+  "deterministic_fixture": {
+    "frequencies_per_epoch": {
+      "slow": 0.001,
+      "intermediate": 0.0033333333333333335,
+      "fast": 0.006666666666666667
+    },
+    "complete_periods": 8,
+    "absolute_tolerance": 0.000002,
+    "relative_tolerance": 0.00001,
+    "initial_condition": "EXACT_STEADY_PERIODIC_STATE"
+  },
+  "delta_min_selection": {
+    "selection_order": 1,
+    "new_transfer_acquisition_order": 2,
+    "static_probe_replicates": 24,
+    "qec_cycles_per_probe": 12000,
+    "probe_seed": 83801,
+    "minimum_scientific_resolution": 0.01,
+    "confidence_z_one_sided": 1.6448536269514722,
+    "resolution_multiplier": 5.0,
+    "formula": "ceil_0p001(max(minimum_scientific_resolution, z95*sqrt(2)*projected_complete_run_noise, resolution_multiplier*projected_single_count_resolution))"
+  },
+  "steady_state_rule": {
+    "freeze_order": 1,
+    "minimum_transient_periods": 1,
+    "gain_relative_change_max": 0.25,
+    "phase_change_radians_max": 0.35,
+    "sigma_relative_change_max": 0.15,
+    "mean_offset_change_max": 0.1,
+    "scale_guard_occupancy_change_max": 0.05,
+    "intermediate_required_stable_transitions": 1,
+    "fast_required_stable_transitions": 2,
+    "slow_required_stable_transitions": 1,
+    "manual_truncation_permitted": false
+  },
+  "transfer_acquisition": {
+    "intermediate": {
+      "label": "intermediate",
+      "frequency_per_epoch": 0.0033333333333333335,
+      "epochs": 900,
+      "analysis_periods": 2,
+      "candidates_per_epoch": 8,
+      "qec_cycles_per_candidate": 12000,
+      "seed": 83901,
+      "profile": "V18_TRANSFER_IDENTIFICATION_ONLY"
+    },
+    "fast": {
+      "label": "fast",
+      "frequency_per_epoch": 0.006666666666666667,
+      "epochs": 600,
+      "analysis_periods": 3,
+      "candidates_per_epoch": 8,
+      "qec_cycles_per_candidate": 12000,
+      "seed": 83902,
+      "profile": "V18_TRANSFER_IDENTIFICATION_ONLY"
+    },
+    "slow": {
+      "label": "slow",
+      "frequency_per_epoch": 0.001,
+      "epochs": 3000,
+      "analysis_periods": 2,
+      "candidates_per_epoch": 8,
+      "qec_cycles_per_candidate": 12000,
+      "seed": 83903,
+      "profile": "V18_TRANSFER_IDENTIFICATION_ONLY"
+    }
+  },
+  "identification": {
+    "bootstrap_draws": 2000,
+    "maximum_gain": 2.0,
+    "maximum_gain_ci_width": 0.75,
+    "maximum_phase_ci_width_radians": 1.2,
+    "maximum_design_condition_number": 1000.0,
+    "mechanistic_ordering_probability_min": 0.8
+  },
+  "acceptance": {
+    "minimum_complete_pairs": 3,
+    "required_initial_phases": [0.0, 1.5707963267948966, 3.141592653589793, 4.71238898038469],
+    "full_acceptance_auto_launch": false
+  },
+  "forbidden_auto_runs": [
+    "figure5c",
+    "natural_drift",
+    "heldout",
+    "reference",
+    "source_budget",
+    "full_four_phase_slow_fast_acceptance"
+  ]
+}

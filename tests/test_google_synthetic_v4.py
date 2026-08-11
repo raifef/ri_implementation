@@ -5,11 +5,11 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from google_rl_reimplementation.google_synthetic_v4.config import CERTIFICATION_SEEDS, load_controller_choices, load_splits, reject_certification_seed
-from google_rl_reimplementation.google_synthetic_v4.controller import DetectorEvidence, MaskedGaussianPPO, clipped_objective_and_gradient, local_policy_ratios
-from google_rl_reimplementation.google_synthetic_v4.plant import SyntheticPlant, frozen_specs, surface_code_control_count, surface_code_gate_count
-from google_rl_reimplementation.google_synthetic_v4.studies import run_certification
-from google_rl_reimplementation.google_synthetic_v4.validation import make_evidence, validate_ppo_reference
+from hdfa_rl_suite.google_synthetic_v4.config import CERTIFICATION_SEEDS, load_controller_choices, load_splits, reject_certification_seed
+from hdfa_rl_suite.google_synthetic_v4.controller import DetectorEvidence, MaskedGaussianPPO, clipped_objective_and_gradient, local_policy_ratios
+from hdfa_rl_suite.google_synthetic_v4.plant import SyntheticPlant, frozen_specs, surface_code_control_count, surface_code_gate_count
+from hdfa_rl_suite.google_synthetic_v4.studies import run_certification
+from hdfa_rl_suite.google_synthetic_v4.validation import make_evidence, validate_ppo_reference
 
 
 def choices(**overrides):

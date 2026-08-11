@@ -2,15 +2,16 @@ import json
 from pathlib import Path
 import numpy as np
 import pytest
-from google_rl_reimplementation.google_pure_evidence_v8.evidence_contracts import EvidenceGate
-from google_rl_reimplementation.google_pure_evidence_v8.experiment_families import ExperimentFamily,forbid_joint_score,require_control_only
-from google_rl_reimplementation.google_pure_evidence_v8.step_response import estimate_target_response,run_step_response
-from google_rl_reimplementation.google_pure_evidence_v8.recovery import run_recovery
-from google_rl_reimplementation.google_pure_evidence_v8.natural_drift import run_natural_drift
-from google_rl_reimplementation.google_pure_evidence_v8.figure5b import DISTANCES,run_figure5b
-from google_rl_reimplementation.google_pure_evidence_v8.figure5c import run_figure5c
-from google_rl_reimplementation.google_pure_evidence_v8.claim_registry import build_claim_registry,validate_scorecard
-from google_rl_reimplementation.google_pure_evidence_v8.manifest_validation import build_protocol_preflight
+from hdfa_rl_suite.google_pure_evidence_v8.evidence_contracts import EvidenceGate
+from hdfa_rl_suite.google_pure_evidence_v8.experiment_families import ExperimentFamily,forbid_joint_score,require_control_only
+from hdfa_rl_suite.google_pure_evidence_v8.step_response import estimate_target_response,run_step_response
+from hdfa_rl_suite.google_pure_evidence_v8.recovery import run_recovery
+from hdfa_rl_suite.google_pure_evidence_v8.natural_drift import run_natural_drift
+from hdfa_rl_suite.google_pure_evidence_v8.figure5b import DISTANCES,run_figure5b
+from hdfa_rl_suite.google_pure_evidence_v8.figure5c import run_figure5c
+from hdfa_rl_suite.google_pure_evidence_v8.claim_registry import build_claim_registry,validate_scorecard
+from hdfa_rl_suite.google_pure_evidence_v8.hdfa_readiness import report_hdfa_readiness
+from hdfa_rl_suite.google_pure_evidence_v8.manifest_validation import build_protocol_preflight
 
 def test_artifact_alone_is_not_final_evidence():
  assert not EvidenceGate("x",True,False,False,False,"CLAIM_NOT_SUPPORTED").final_evidence
@@ -47,8 +48,10 @@ def test_figure5c_has_21_independent_phase_and_time_fits():
 def test_claim_registry_has_required_fields_and_cannot_form_scorecard():
  r=build_claim_registry();required={"paper_quantity","paper_value","paper_uncertainty","comparison_legitimacy","same_run_required","cannot_be_jointly_scored_with","status"};assert all(required<=row.keys() for row in r["rows"])
  with pytest.raises(RuntimeError):validate_scorecard(r["rows"][:2])
+def test_readiness_is_derived_and_comparison_stays_blocked():
+ r=report_hdfa_readiness();assert not r["definitive_comparison_permitted"] and r["outcome"]=="HDFA_COMPARISON_NOT_CAUSALLY_IDENTIFIABLE" and not all(r["matching_checks"].values())
 def test_protocol_preflight_validates_files_and_gates():
  r=build_protocol_preflight();assert r["protocol_gate_pass"] and not r["reference_acquisition_permitted"]
 def test_all_evidence_cli_entries_registered():
  text=Path("pyproject.toml").read_text(encoding="utf-8")
- for suffix in ("build-contracts","validate-manifests","run-natural-drift","run-step-response","run-recovery","run-figure5b","run-figure5c","build-claim-registry","build-paper-comparison","status"):assert f"google-rl-evidence-v8-{suffix} =" in text
+ for suffix in ("build-contracts","validate-manifests","run-natural-drift","run-step-response","run-recovery","run-figure5b","run-figure5c","build-claim-registry","build-paper-comparison","report-hdfa-readiness","status"):assert f"hdfa-google-evidence-v8-{suffix} =" in text

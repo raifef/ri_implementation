@@ -4,17 +4,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from google_rl_reimplementation.google_pure_v7.controller import resolve_production_controller
-from google_rl_reimplementation.google_pure_v7.figure5.accounting import acquisition_accounting,total_controls
-from google_rl_reimplementation.google_pure_v7.figure5.common import SOURCE_STATUSES, require_mode
-from google_rl_reimplementation.google_pure_v7.figure5.panel_a import _condition
-from google_rl_reimplementation.google_pure_v7.figure5.panel_a import acquire as acquire_a
-from google_rl_reimplementation.google_pure_v7.figure5.panel_b import scaling_trace
-from google_rl_reimplementation.google_pure_v7.figure5.protocol import panel_plan
-from google_rl_reimplementation.google_pure_v7.figure5.seed_registry import BLACKLIST,SEEDS,validate_registry
-from google_rl_reimplementation.google_pure_v7.figure5.source_contract import build_source_contract
-from google_rl_reimplementation.google_pure_v7.figure5.storage import discover_shards,shard_id,write_shard
-from google_rl_reimplementation.google_pure_v7.figure5.validation import logical_floor,logical_metric,normalized_progress,validate_rows
+from hdfa_rl_suite.google_pure_v7.controller import resolve_production_controller
+from hdfa_rl_suite.google_pure_v7.figure5.accounting import acquisition_accounting,total_controls
+from hdfa_rl_suite.google_pure_v7.figure5.common import SOURCE_STATUSES, require_mode
+from hdfa_rl_suite.google_pure_v7.figure5.panel_a import _condition
+from hdfa_rl_suite.google_pure_v7.figure5.panel_a import acquire as acquire_a
+from hdfa_rl_suite.google_pure_v7.figure5.panel_b import scaling_trace
+from hdfa_rl_suite.google_pure_v7.figure5.protocol import panel_plan
+from hdfa_rl_suite.google_pure_v7.figure5.seed_registry import BLACKLIST,SEEDS,validate_registry
+from hdfa_rl_suite.google_pure_v7.figure5.source_contract import build_source_contract
+from hdfa_rl_suite.google_pure_v7.figure5.storage import discover_shards,shard_id,write_shard
+from hdfa_rl_suite.google_pure_v7.figure5.validation import logical_floor,logical_metric,normalized_progress,validate_rows
 
 @pytest.fixture(autouse=True,scope="module")
 def _controller():resolve_production_controller()
@@ -58,7 +58,7 @@ def test_paper_scale_plan_is_dry_runnable_but_acquisition_is_guarded():
     with pytest.raises(RuntimeError):acquire_a(cfg)
 
 def test_interruption_resume_preserves_finalized_shard_bytes(tmp_path,monkeypatch):
-    import google_rl_reimplementation.google_pure_v7.figure5.storage as storage
+    import hdfa_rl_suite.google_pure_v7.figure5.storage as storage
     monkeypatch.setattr(storage,"figure5_root",lambda:tmp_path)
     cfg={"mode":"smoke","frequencies":[1/150],"entropy_coefficients":[.0004],"epochs":4,"candidates":4,"cycles_per_candidate":64,"controls":6,"drift_amplitude":.2,"seeds":[54021,54022]}
     first=acquire_a(cfg,max_shards=1);npz=next((tmp_path/"shards"/"5a").glob("*.npz"));before=npz.read_bytes()
@@ -83,7 +83,7 @@ def test_shard_identifier_changes_with_protocol_fields():
     assert shard_id(base)!=shard_id({**base,"seed":2})
 
 def test_atomic_shards_round_trip_and_corruption_is_rejected(tmp_path,monkeypatch):
-    import google_rl_reimplementation.google_pure_v7.figure5.storage as module
+    import hdfa_rl_suite.google_pure_v7.figure5.storage as module
     monkeypatch.setattr(module,"panel_shard_dir",lambda panel:tmp_path/panel)
     identity={"panel":"5b","protocol_hash":"a","controller_hash":"c","grid_cell":{},"distance":3,"parameters_per_gate":1,"seed":1,"replicate":0,"chunk":0}
     record=write_shard("5b",identity,{"x":[1.,2.]},{"mode":"smoke"});loaded=discover_shards("5b")
@@ -92,7 +92,7 @@ def test_atomic_shards_round_trip_and_corruption_is_rejected(tmp_path,monkeypatc
     with pytest.raises(RuntimeError):discover_shards("5b")
 
 def test_panel_validators_reject_missing_or_wrong_semantics(tmp_path,monkeypatch):
-    import google_rl_reimplementation.google_pure_v7.figure5.validation as validation
+    import hdfa_rl_suite.google_pure_v7.figure5.validation as validation
     monkeypatch.setattr(validation,"figure5_root",lambda:tmp_path)
     assert not validate_rows("5a",[],mode="smoke")["valid"]
     bad=[{"logical_floor":.5,"logical_initial":.4,"distance":3,"parameters_per_gate":1}]
@@ -103,14 +103,14 @@ def test_all_27_commands_are_registered():
     expected=["fig5-source-contract","fig5-freeze-protocols","fig5-seed-registry","fig5-plan-all"]
     expected += [f"fig5{p}-{action}" for p in "abc" for action in ("plan","acquire","merge","validate","plot","report")]
     expected += ["fig5-merge-all","fig5-validate-all","fig5-plot-all","fig5-report-all","fig5-status"]
-    assert len(expected)==27;assert all(f"google-rl-v7-{name}" in text for name in expected)
+    assert len(expected)==27;assert all(f"hdfa-google-v7-{name}" in text for name in expected)
 
-def test_figure5_package_does_not_import_v5_or_outside_workflow_controller_runtime():
-    root=Path("src/google_rl_reimplementation/google_pure_v7/figure5")
+def test_figure5_package_does_not_import_v5_or_staged_controller_runtime():
+    root=Path("src/hdfa_rl_suite/google_pure_v7/figure5")
     for path in root.glob("*.py"):
         tree=ast.parse(path.read_text(encoding="utf-8"));imports="\n".join(ast.unparse(n) for n in ast.walk(tree) if isinstance(n,(ast.Import,ast.ImportFrom)))
-        assert "google_pure_v5" not in imports;assert "stage6" not in imports;assert "google_rl_reimplementation.pipeline" not in imports
+        assert "google_pure_v5" not in imports;assert "stage6" not in imports;assert "hdfa_rl_suite.pipeline" not in imports
 
 def test_plotting_module_contains_no_acquisition_call():
-    text=Path("src/google_rl_reimplementation/google_pure_v7/figure5/plotting.py").read_text(encoding="utf-8")
+    text=Path("src/hdfa_rl_suite/google_pure_v7/figure5/plotting.py").read_text(encoding="utf-8")
     assert "acquire(" not in text and "scaling_trace" not in text and "seaborn" not in text

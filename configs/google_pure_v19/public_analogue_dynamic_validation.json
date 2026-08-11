@@ -1,0 +1,49 @@
+{
+  "schema_version": "google-pure-v19-public-analogue-dynamic-validation.v1",
+  "mission": "bounded three-frequency dynamic test of the isolated public-analogue scale objective",
+  "frequencies": {
+    "slow": {
+      "frequency_per_epoch": 0.001,
+      "epochs": 3000,
+      "transient_periods": 1,
+      "analysis_periods": 2,
+      "candidates_per_epoch": 8,
+      "qec_cycles_per_candidate": 3000,
+      "seed": 84903
+    },
+    "intermediate": {
+      "frequency_per_epoch": 0.0033333333333333335,
+      "epochs": 900,
+      "transient_periods": 1,
+      "analysis_periods": 2,
+      "candidates_per_epoch": 8,
+      "qec_cycles_per_candidate": 3000,
+      "seed": 84901
+    },
+    "fast": {
+      "frequency_per_epoch": 0.006666666666666667,
+      "epochs": 450,
+      "transient_periods": 1,
+      "analysis_periods": 2,
+      "candidates_per_epoch": 8,
+      "qec_cycles_per_candidate": 3000,
+      "seed": 84902
+    }
+  },
+  "bootstrap_draws": 2000,
+  "bootstrap_seed": 84900,
+  "minimum_joint_ordering_probability": 0.8,
+  "minimum_sampled_policy_improvement": 0.0,
+  "mean_hyperparameters_changed": false,
+  "scale_change": "entropy gradient divided by active coordinate count only",
+  "heldout_seeds": [],
+  "automatic_campaigns_permitted": [],
+  "forbidden_auto_runs": [
+    "source-budget",
+    "heldout",
+    "reference",
+    "natural-drift",
+    "figure5c",
+    "paired-acceptance"
+  ]
+}

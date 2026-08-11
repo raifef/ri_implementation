@@ -1,0 +1,40 @@
+{
+  "schema_version": "google-pure-v20-fast-mean-diagnosis.v1",
+  "mission": "bounded causal diagnosis and one fast-only repair of the V19 public-analogue branch",
+  "frozen_v19_controller_mode": "PUBLIC_ANALOGUE_DIRECT_SIGMA_EXPERIMENTAL_V19",
+  "frozen_v19_controller_hash": "14c5243c4053d36b63c8f32537ad0a9309a29d91d78f73ff5401f1e716ae4af5",
+  "frozen_source_parent_hash": "6b24d03aeb0f16ed8c9ed855755ebdb6b5e7cc8a558b4dfd9a646dcd6bfe5aa2",
+  "fast_frequency_per_epoch": 0.006666666666666667,
+  "analysis_window": [150, 750],
+  "decomposition_harmonics": 4,
+  "phase_states": 8,
+  "phase_bins": 8,
+  "finite_difference_delta": 0.01,
+  "high_candidate_count": 64,
+  "reference_candidate_count": 256,
+  "high_cycles_per_candidate": 48000,
+  "factorial": {
+    "candidate_axis": [8, 16, 32],
+    "cycle_axis": [12000, 24000, 48000],
+    "matched_total_budget": 384000,
+    "diagnostic_states": 4
+  },
+  "scale_multipliers": [0.25, 0.5, 0.75, 1.0, 1.25],
+  "population_rollout_epochs": 300,
+  "population_gaussian_pairs": 4,
+  "postrepair": {
+    "epochs": 300,
+    "transient_epochs": 150,
+    "analysis_epochs": 150,
+    "candidates_per_epoch": 8,
+    "qec_cycles_per_candidate": 12000,
+    "seed": 85002
+  },
+  "maximum_causal_repairs": 1,
+  "automatic_acquisition_frequencies": [0.006666666666666667],
+  "automatic_campaigns_permitted": [],
+  "forbidden_auto_runs": [
+    "slow", "intermediate", "long-three-frequency", "source-budget", "heldout",
+    "reference", "natural-drift", "figure5c", "paired-acceptance"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": "google-pure-v15-complete-open-issue-closure.v1",
+  "sensitivity": {
+    "native_offsets_in_sigma0": [-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5],
+    "replicates": 24,
+    "confidence_level": 0.95,
+    "hysteresis_tolerance_fraction": 0.08,
+    "cubic_fraction_tolerance": 0.15
+  },
+  "information_ablation": {
+    "candidate_counts": [10, 20, 40, 80],
+    "shots_per_candidate": [2500, 10000, 100000],
+    "replicates": 64
+  },
+  "figure5b": {
+    "distances": [3, 5, 7],
+    "two_qubit_layers": [1, 10, 30],
+    "epochs": 512,
+    "controls_distance15_p30": 38670,
+    "threshold_physical_error": 0.00179
+  },
+  "step": {
+    "paper_anchor_epochs": 130,
+    "target_fraction": 0.9,
+    "minimum_tail_points": 20
+  },
+  "natural": {
+    "complete_pair_count": 48,
+    "epochs": 510,
+    "warmup_epochs": 150,
+    "evaluation_cadence_epochs": 5,
+    "target_suppression_db": 4.0,
+    "alpha": 0.05,
+    "power": 0.8
+  },
+  "source_timing": {
+    "candidates_per_epoch": 40,
+    "ideal_epoch_seconds": 4.0,
+    "reported_wall_clock_min_seconds": 60.0,
+    "reported_wall_clock_max_seconds": 600.0
+  },
+  "gate": {
+    "required_issue_count": 26,
+    "require_proprietary_plant": true,
+    "require_hardware_validation": true,
+    "allow_force": false
+  }
+}

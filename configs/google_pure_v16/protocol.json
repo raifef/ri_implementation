@@ -1,0 +1,67 @@
+{
+  "schema_version": "google-pure-v16-protocol.v1",
+  "mission": "source-normalized optimizer consistency and physically matched validation",
+  "conditioned_curvature": 0.01,
+  "v12_diagnostic_curvature": 0.03947594180534824,
+  "development_seeds": [81601, 81602, 81603, 81604, 81605, 81606],
+  "heldout_seeds": [],
+  "optimizer_calibration": {
+    "mean_learning_rates": [0.08, 0.16, 0.32],
+    "sigma_learning_rates": [0.02, 0.04, 0.08],
+    "initial_sigmas": [0.08, 0.15, 0.3],
+    "baseline_learning_rate": 0.08,
+    "baseline_loss_weight": 0.2,
+    "entropy_anchors": [0.001, 0.01, 0.1],
+    "balanced_entropy_coefficient": 0.01,
+    "ppo_clip": 0.2,
+    "minimum_sigma": 0.002,
+    "maximum_sigma": 0.8,
+    "momentum": 0.0,
+    "update_passes": 1,
+    "replay_depth": 0,
+    "stationary_probe": {
+      "dimension": 16,
+      "epochs": 96,
+      "candidates": 32,
+      "cycles_per_candidate": 12000,
+      "initial_error": 0.35,
+      "maximum_candidate_excess_edr": 0.0025
+    }
+  },
+  "matched_step": {
+    "epochs": 160,
+    "candidates": 24,
+    "cycles_per_candidate": 12000,
+    "seeds": [81701, 81702, 81703]
+  },
+  "matched_figure5b": {
+    "epochs": 96,
+    "candidates": 32,
+    "cycles_per_candidate": 12000,
+    "seeds": [81801, 81802, 81803],
+    "distance": 3,
+    "parameters_per_gate": 1
+  },
+  "reduced_acceptance": {
+    "recovery_epochs": 96,
+    "figure5a_epochs": 24,
+    "figure5a_candidates": 8,
+    "figure5a_cycles_per_candidate": 300,
+    "figure5a_frequencies": [0.001, 0.006666666666666667]
+  },
+  "forbidden_selection_outputs": [
+    "paper_step_130_epochs",
+    "figure5a_critical_frequency",
+    "figure5b_irreducible_floors",
+    "figure5c_slopes",
+    "natural_drift_suppression_db",
+    "logical_error_rate_improvement"
+  ],
+  "evidence_boundary": {
+    "final_evidence": false,
+    "scientifically_valid": false,
+    "paper_equivalence_claim_permitted": false,
+    "heldout_seeds_consumed": false,
+    "long_run_auto_launched": false
+  }
+}

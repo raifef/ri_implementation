@@ -6,17 +6,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from google_rl_reimplementation.google_pure_v6 import DISCLAIMER, OUTCOME_CLASSES
-from google_rl_reimplementation.google_pure_v6.baseline import DetectorBaseline
-from google_rl_reimplementation.google_pure_v6.config import CERTIFICATION_SEEDS, config_dir, guard_seed, repository_root
-from google_rl_reimplementation.google_pure_v6.experiments import POLICY_CLASSES, run_matched_trace
-from google_rl_reimplementation.google_pure_v6.factor_graph import global_importance_ratio, local_importance_ratios
-from google_rl_reimplementation.google_pure_v6.metrics import spectral_metrics, stability_metrics
-from google_rl_reimplementation.google_pure_v6.plant import PureQuadraticPlant, default_spec, optimum_tape
-from google_rl_reimplementation.google_pure_v6.policy import FactorizedGaussianPolicy, component_log_probability, gaussian_scores
-from google_rl_reimplementation.google_pure_v6.snapshot import EXPECTED_HEADLINE, current_v5_headline
-from google_rl_reimplementation.google_pure_v6.studies import freeze_repaired_drift_protocol, run_certification
-from google_rl_reimplementation.google_pure_v6.update import ppo_objective_and_gradient
+from hdfa_rl_suite.google_pure_v6 import DISCLAIMER, OUTCOME_CLASSES
+from hdfa_rl_suite.google_pure_v6.baseline import DetectorBaseline
+from hdfa_rl_suite.google_pure_v6.config import CERTIFICATION_SEEDS, config_dir, guard_seed, repository_root
+from hdfa_rl_suite.google_pure_v6.experiments import POLICY_CLASSES, run_matched_trace
+from hdfa_rl_suite.google_pure_v6.factor_graph import global_importance_ratio, local_importance_ratios
+from hdfa_rl_suite.google_pure_v6.metrics import spectral_metrics, stability_metrics
+from hdfa_rl_suite.google_pure_v6.plant import PureQuadraticPlant, default_spec, optimum_tape
+from hdfa_rl_suite.google_pure_v6.policy import FactorizedGaussianPolicy, component_log_probability, gaussian_scores
+from hdfa_rl_suite.google_pure_v6.snapshot import EXPECTED_HEADLINE, current_v5_headline
+from hdfa_rl_suite.google_pure_v6.studies import freeze_repaired_drift_protocol, run_certification
+from hdfa_rl_suite.google_pure_v6.update import ppo_objective_and_gradient
 
 
 def test_outcome_hierarchy_is_frozen_and_disclaimer_exact():
@@ -32,7 +32,7 @@ def test_outcome_hierarchy_is_frozen_and_disclaimer_exact():
 
 def test_v5_headline_is_reproduced_exactly_without_importing_v5():
     assert current_v5_headline() == EXPECTED_HEADLINE
-    source = Path(__file__).parents[1] / "src" / "google_rl_reimplementation" / "google_pure_v6"
+    source = Path(__file__).parents[1] / "src" / "hdfa_rl_suite" / "google_pure_v6"
     for path in source.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
@@ -180,4 +180,4 @@ def test_all_v6_entry_points_are_registered():
         "freeze-certification", "run-certification",
     )
     for suffix in expected:
-        assert f"google-rl-v6-{suffix}" in text
+        assert f"hdfa-google-v6-{suffix}" in text

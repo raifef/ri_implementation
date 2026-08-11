@@ -8,6 +8,22 @@ __pycache__/
 htmlcov/
 build/
 dist/
+
+# Local Python environments and editable-install workspaces.
 .venv/
 venv/
+.codex-ri-implementation-work/
 
+# Generated experiment outputs are reproducible and are not source code.
+artifacts/
+tmp/
+*.log
+
+# Local scratch material.
+New folder/
+
+# Editor and operating-system metadata.
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

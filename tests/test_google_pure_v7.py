@@ -6,18 +6,18 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from google_rl_reimplementation.google_pure_v7 import ACTIVE_CERTIFICATION_SEEDS, RETIRED_SEEDS
-from google_rl_reimplementation.google_pure_v7.config import repository_root
-from google_rl_reimplementation.google_pure_v7.controller import (CONTROLLER_MODE, RESOLVED_PARAMETERS,
+from hdfa_rl_suite.google_pure_v7 import ACTIVE_CERTIFICATION_SEEDS, RETIRED_SEEDS
+from hdfa_rl_suite.google_pure_v7.config import repository_root
+from hdfa_rl_suite.google_pure_v7.controller import (CONTROLLER_MODE, RESOLVED_PARAMETERS,
     require_resolved_controller, resolve_production_controller)
-from google_rl_reimplementation.google_pure_v7.gates import gate_from_result
-from google_rl_reimplementation.google_pure_v7.hyperparameters import select_passing_configuration
-from google_rl_reimplementation.google_pure_v7.natural import natural_ensemble_comparable
-from google_rl_reimplementation.google_pure_v7.scorecard import PRIMARY_ARTIFACTS, run_development_scorecard
-from google_rl_reimplementation.google_pure_v7.sine import (InvalidSineDiagnostic, classify_bandwidth_cutoff,
+from hdfa_rl_suite.google_pure_v7.gates import gate_from_result
+from hdfa_rl_suite.google_pure_v7.hyperparameters import select_passing_configuration
+from hdfa_rl_suite.google_pure_v7.natural import natural_ensemble_comparable
+from hdfa_rl_suite.google_pure_v7.scorecard import PRIMARY_ARTIFACTS, run_development_scorecard
+from hdfa_rl_suite.google_pure_v7.sine import (InvalidSineDiagnostic, classify_bandwidth_cutoff,
     fit_sine_tracking, wrap_phase)
-from google_rl_reimplementation.google_pure_v7.snapshot import EXPECTED_V6_HEADLINE, current_v6_headline, snapshot_v6
-from google_rl_reimplementation.google_pure_v7.timescale_studies import run_long_step, run_production_repaired_drift
+from hdfa_rl_suite.google_pure_v7.snapshot import EXPECTED_V6_HEADLINE, current_v6_headline, snapshot_v6
+from hdfa_rl_suite.google_pure_v7.timescale_studies import run_long_step, run_production_repaired_drift
 
 
 def _known_sine(*, periods=5, period=40, gain=.7, phase=-.3, amplitude=.2):
@@ -102,7 +102,7 @@ def test_resolved_controller_is_explicit_source_correct_and_unique():
 
 
 def test_unresolved_controller_blocks_final_tests(monkeypatch):
-    import google_rl_reimplementation.google_pure_v7.controller as module
+    import hdfa_rl_suite.google_pure_v7.controller as module
     monkeypatch.setattr(module,"read_artifact",lambda name:{"controller_mode":CONTROLLER_MODE})
     with pytest.raises(RuntimeError): require_resolved_controller()
 
@@ -110,7 +110,7 @@ def test_unresolved_controller_blocks_final_tests(monkeypatch):
 def test_legacy_objective_blocks_final_benchmark(monkeypatch):
     controller=resolve_production_controller(); template={"resolved_config_hash":controller["resolved_config_hash"],
         "mechanism_valid":True,"performance_pass":True,"objective_mode":CONTROLLER_MODE}
-    import google_rl_reimplementation.google_pure_v7.timescale_studies as module
+    import hdfa_rl_suite.google_pure_v7.timescale_studies as module
     def fake(name):
         value=dict(template)
         if name=="timescale_matched_sine": value["objective_mode"]="legacy_v5_component_clipping_diagnostic_only"
@@ -139,7 +139,7 @@ def _scorecard_fixture(controller_hash:str, *, natural_pass=True, different_hash
 
 def test_natural_material_regression_blocks_certification(monkeypatch):
     controller=resolve_production_controller(); artifacts=_scorecard_fixture(controller["resolved_config_hash"],natural_pass=False)
-    import google_rl_reimplementation.google_pure_v7.scorecard as module
+    import hdfa_rl_suite.google_pure_v7.scorecard as module
     monkeypatch.setattr(module,"read_artifact",lambda name:artifacts[name])
     result=run_development_scorecard()
     assert result["certification_ready"] is False
@@ -148,7 +148,7 @@ def test_natural_material_regression_blocks_certification(monkeypatch):
 
 def test_different_controller_hashes_block_certification(monkeypatch):
     controller=resolve_production_controller(); artifacts=_scorecard_fixture(controller["resolved_config_hash"],different_hash=True)
-    import google_rl_reimplementation.google_pure_v7.scorecard as module
+    import hdfa_rl_suite.google_pure_v7.scorecard as module
     monkeypatch.setattr(module,"read_artifact",lambda name:artifacts[name])
     result=run_development_scorecard()
     assert not result["certification_ready"] and not result["one_resolved_controller_hash"]
@@ -156,7 +156,7 @@ def test_different_controller_hashes_block_certification(monkeypatch):
 
 def test_legacy_objective_blocks_certification(monkeypatch):
     controller=resolve_production_controller(); artifacts=_scorecard_fixture(controller["resolved_config_hash"],legacy=True)
-    import google_rl_reimplementation.google_pure_v7.scorecard as module
+    import hdfa_rl_suite.google_pure_v7.scorecard as module
     monkeypatch.setattr(module,"read_artifact",lambda name:artifacts[name])
     result=run_development_scorecard()
     assert not result["certification_ready"] and not result["legacy_objective_absent"]
@@ -175,7 +175,7 @@ def test_long_commands_require_explicit_execute():
 
 
 def test_v7_imports_no_v5_runtime_and_registers_all_commands():
-    source=repository_root()/"src/google_rl_reimplementation/google_pure_v7"
+    source=repository_root()/"src/hdfa_rl_suite/google_pure_v7"
     for path in source.glob("*.py"):
         tree=ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
@@ -188,7 +188,7 @@ def test_v7_imports_no_v5_runtime_and_registers_all_commands():
         "run-replay-age-audit","run-natural-ablation","run-full-natural-ensemble","run-hyperparameter-study",
         "run-exploration-study","run-final-recovery","run-final-scaling","run-development-scorecard",
         "freeze-certification","run-certification")
-    assert all(f"google-rl-v7-{name}" in text for name in commands)
+    assert all(f"hdfa-google-v7-{name}" in text for name in commands)
 
 
 def test_seed_cohort_is_retained_and_retired_seed_stays_retired():

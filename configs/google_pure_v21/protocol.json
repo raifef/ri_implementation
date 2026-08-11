@@ -1,0 +1,28 @@
+{
+  "schema_version": "google-pure-v21-fixed-budget-candidate-design.v1",
+  "mission": "fixed-budget candidate-design and exploration-information Pareto diagnosis",
+  "candidate_budget": {"K": 8, "M": 12000, "B": 96000},
+  "fast_frequency_per_epoch": 0.006666666666666667,
+  "stored_phase_states": 8,
+  "public_block_count": 4,
+  "variance_direction_repetitions": 6,
+  "variance_shot_repetitions": 4,
+  "variance_states": 4,
+  "benchmark_repetitions": 4,
+  "pareto_repetitions": 2,
+  "scale_multipliers": [0.25, 0.5, 0.75, 1.0, 1.25],
+  "rolling_coverage_windows": [1, 4, 8, 16, 41],
+  "coverage_epochs": 164,
+  "online_epochs": 300,
+  "online_transient_epochs": 150,
+  "maximum_online_designs": 1,
+  "maximum_repairs": 1,
+  "new_fast_seeds": [86101, 86102],
+  "new_initial_phases": [0.37, 1.11],
+  "automatic_acquisition_frequencies": [0.006666666666666667],
+  "automatic_campaigns_permitted": [],
+  "forbidden_auto_runs": [
+    "slow", "intermediate", "source-budget", "heldout", "reference",
+    "natural-drift", "figure5c", "paired-acceptance", "long-three-frequency"
+  ]
+}

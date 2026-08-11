@@ -1,0 +1,79 @@
+{
+  "schema_version": "google-pure-v18.1-extended-fast-protocol.v1",
+  "profile": "V18_EXTENDED_TRANSFER_IDENTIFICATION_ONLY",
+  "frequency_per_epoch": 0.006666666666666667,
+  "period_epochs": 150,
+  "base_epochs": 600,
+  "extra_epochs": 150,
+  "total_epochs": 750,
+  "base_analysis_periods": 3,
+  "extended_analysis_periods": 4,
+  "candidates_per_epoch": 8,
+  "qec_cycles_per_candidate": 12000,
+  "circuit_rounds": 3,
+  "seed": 83902,
+  "controller": {
+    "controller_hash": "6b24d03aeb0f16ed8c9ed855755ebdb6b5e7cc8a558b4dfd9a646dcd6bfe5aa2",
+    "parameterization": "DIRECT_SIGMA_SOURCE_EXACT",
+    "mean_learning_rate": 0.32,
+    "sigma_learning_rate": 0.08,
+    "initial_sigma": 0.15,
+    "entropy_coefficient": 0.01,
+    "ppo_clip": 0.2,
+    "baseline_loss_weight": 0.2,
+    "optimizer_changes_permitted": false
+  },
+  "frozen_stability": {
+    "sigma_relative_change_max": 0.15,
+    "fast_required_stable_transitions": 2,
+    "tail_transition_period_indices": [[2, 3], [3, 4]],
+    "manual_truncation_permitted": false
+  },
+  "frozen_inputs": {
+    "base_checkpoint": {
+      "path": "artifacts/google_pure_v18/acquisition/fast/checkpoint.json",
+      "sha256": "0a4184b399ebbc3bc3e98723dd520cd32f0a9eca7b70e7eddfc0256dd4e2cc6b"
+    },
+    "base_fast_transfer": {
+      "path": "artifacts/google_pure_v18/transfer_fast.json",
+      "sha256": "dcaaaad1245d2eb6343df7979949ef38df24eec0f50807313b20b05937533ab8"
+    },
+    "intermediate_transfer": {
+      "path": "artifacts/google_pure_v18/transfer_intermediate.json",
+      "sha256": "614f7ae2f099fd9ec5d997ca052b86f07ecb964035b653f584b4f3e07083ae42"
+    },
+    "steady_state_rule": {
+      "path": "artifacts/google_pure_v18/steady_state_rule.json",
+      "sha256": "6dae0a191da2ecc59ff9ff81b17637407b10a854ea64b353a6bf126cd8310cce"
+    },
+    "import_manifest": {
+      "path": "artifacts/google_pure_v18/import_manifest.json",
+      "sha256": "c53adcffe411f0dbafa14b8f60a4404470ee427926b77f1acc2980955969e9bc"
+    },
+    "optimizer_bundle": {
+      "path": "artifacts/google_pure_v16/frozen_source_normalized_optimizer.json",
+      "sha256": "2cef8ca0eca9e667b2d576cb895ba2cbc09fbfe6b154575934c44d46c69e412d"
+    },
+    "v18_protocol": {
+      "path": "configs/google_pure_v18/protocol.json",
+      "sha256": "dfcf0e12009a8e7720be74b14747c636cdfe33d078947f7e8aa48eba6dd7dcc3"
+    },
+    "production_acquisition": {
+      "path": "src/hdfa_rl_suite/google_pure_source_exact/figure5a/acquisition.py",
+      "sha256": "e8185342b53489cc359ffd8289885bc38c2090badd65f3c4c161c10d032f4f50"
+    },
+    "production_plant": {
+      "path": "src/hdfa_rl_suite/google_pure_source_exact/figure5a/plant.py",
+      "sha256": "dd215321ab37ba203a5b17efa85876876743f518e9fba845ea2d20f5252722a6"
+    }
+  },
+  "forbidden_auto_runs": [
+    "slow",
+    "paired_acceptance",
+    "source_budget",
+    "heldout",
+    "reference",
+    "natural_drift",
+    "figure5c"
+  ]
+}

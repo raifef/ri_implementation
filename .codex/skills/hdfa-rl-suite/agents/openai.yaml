@@ -1,0 +1,4 @@
+interface:
+  display_name: "HDFA-RL Suite"
+  short_description: "Implement and audit the full staged HDFA-QEC-RL system"
+  default_prompt: "Use $hdfa-rl-suite with the revision-2 specifications to implement or review the requested architecture component."

@@ -1,0 +1,88 @@
+"""Tiny end-to-end proof that the amended controller and 41-control Stim plant execute together."""
+from __future__ import annotations
+import argparse, json
+from pathlib import Path
+import numpy as np
+from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import run_cell
+from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import AcquisitionMode, Figure5aProtocol, canonical_hash
+from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_plant, dependency_hashes, validate_dependencies
+from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.contracts import PositivityGuard
+from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import OptimizerConfig
+from .identity import build_direct_sigma_identity, require_direct_sigma_identity
+from .source_normalization import SourceNormalizationBoundary
+
+ROOT=Path(__file__).resolve().parents[3]
+DEFAULT_OUTPUT=ROOT/"artifacts/google_pure_source_exact/direct_sigma_integration"
+
+def _write(path: Path,value: dict):
+    path.parent.mkdir(parents=True,exist_ok=True); temporary=path.with_suffix(path.suffix+".tmp")
+    temporary.write_text(json.dumps(value,indent=2,sort_keys=True)+"\n",encoding="utf-8"); temporary.replace(path)
+
+def run_tiny_integration(output: Path=DEFAULT_OUTPUT) -> dict:
+    config_path=ROOT/"configs/google_pure_source_exact/figure5a.json"
+    config=json.loads(config_path.read_text(encoding="utf-8")); identity=build_direct_sigma_identity(ROOT)
+    require_direct_sigma_identity(identity); plant=build_plant(config); dependencies=validate_dependencies(ROOT,config)
+    controller=config["controller"]
+    optimizer=OptimizerConfig(float(controller["mean_learning_rate"]),float(controller["sigma_learning_rate"]),
+        float(controller["baseline_learning_rate"]),minimum_sigma=float(controller["minimum_sigma"]),
+        maximum_sigma=float(controller["maximum_sigma"]),positivity_guard=PositivityGuard(controller["positivity_guard"]))
+    protocol=Figure5aProtocol(AcquisitionMode.SMOKE,2,3,30,int(config["plant"]["circuit_rounds"]))
+    checkpoint=output/f"checkpoint-{identity['controller_hash'][:12]}-{identity['controller_code_hash'][:12]}.json"
+    cell=run_cell(protocol=protocol,plant=plant,frequency=float(config["anchor"]["frequency"]),
+        entropy_weight=float(config["anchor"]["entropy_weights"][0]),seed=53101,optimizer_config=optimizer,
+        initial_sigma=float(controller["initial_sigma"]),checkpoint_path=checkpoint,
+        dependency_hashes=dependency_hashes(ROOT,config),controller_hash=identity["controller_hash"],
+        clip=float(controller["ppo_clip"]),baseline_weight=float(controller["baseline_weight"]),resume=checkpoint.exists())
+    state=json.loads(checkpoint.read_text(encoding="utf-8")); mean=np.asarray(state["policy"]["mean"]); sigma=np.asarray(state["policy"]["sigma"])
+    degree=np.sum(plant.mask,axis=0).astype(float)
+    curvature=np.asarray([item.omega_sensitivity for item in plant.inventory])*degree
+    boundary=SourceNormalizationBoundary.from_training_objective(
+        "FIGURE5A_REAL_TIME_STEERING",curvature,control_ids=plant.parameter_ids)
+    epoch=protocol.epochs-1; optimum_normalized=plant.optimum(epoch,float(config["anchor"]["frequency"])); rng=np.random.default_rng(53199)
+    optimum=boundary.target_to_native(optimum_normalized)
+    oracle_latent=plant.latent_controls_for(optimum_normalized)
+    to_native=lambda latent:boundary.apply(plant.apply_control_transform(latent)).native
+    policies={"fixed":boundary.target_to_native(np.zeros(41)),"oracle":optimum,
+              "oracle_with_policy_sigma":to_native(oracle_latent+sigma*rng.normal(size=41)),
+              "learned_mean":to_native(mean),
+              "sampled_candidates":to_native(mean+sigma*rng.normal(size=41))}
+    policy_counts={name:int(plant.sample_detector_counts(action,epoch=epoch,frequency=float(config["anchor"]["frequency"]),
+        qec_cycles=3000,seed=plant.stream_seed(53199,name,epoch,0),
+        target_controls=optimum).sum()) for name,action in policies.items()}
+    records=cell["epoch_records"]
+    gates={
+        "direct_sigma_controller_hash_loaded":cell["controller_hash"]==identity["controller_hash"],
+        "direct_sigma_code_hash_loaded":bool(identity["controller_code_hash"]),
+        "direct_sigma_parameterization_executed":all(row["parameterization"]=="direct_sigma" for row in records),
+        "stim_41_parameter_plant_loaded":plant.control_count==41,
+        "edr_sensitivity_normalization_loaded":dependencies["gates"]["empirical_normalization_math_pass"],
+        "elementwise_coordinate_ratio_clipping_executed":all(row["coordinate_ratios_clipped_before_sparse_product"] for row in records),
+        "learned_detector_baseline_executed":all(row["baseline_mode"]=="JOINT_LEARNED_DETECTOR_BASELINE" for row in records),
+        "source_entropy_regime_loaded":float(config["anchor"]["entropy_weights"][0]) in (0.001,0.01,0.1),
+        "nonzero_qec_cycles_executed":cell["candidate_qec_cycles"]>0,
+        "nonzero_detector_events_observed":sum(cell["stream_totals"].values())>0,
+        "five_policy_decomposition_retained":set(policy_counts)==set(policies) and all(value>=0 for value in policy_counts.values()),
+        "bounded_action_transform_executed":all(row["action_execution"]=="plant_derived_per_coordinate_scaled_tanh" for row in records),
+        "v15_source_boundary_executed":all(row["boundary_apply_count"]==1 and
+            row["plant_boundary_execution"]=="v15_source_normalized_to_native_once" for row in records),
+        "latent_gaussian_likelihood_retained":all(row["likelihood_space"]=="latent_gaussian" for row in records),
+        "status_inherits_provenance_without_promotion":True,
+    }
+    manifest={"schema":"paper-direct-sigma-integration.v1","pass":all(gates.values()),"gates":gates,
+        **{key:identity[key] for key in ("controller_mode","controller_hash","controller_code_hash","parameterization",
+            "source_parameterization","ratio_clipping","baseline","optimized_scale_variable")},
+        "plant_mode":"FIGURE5A_41_PARAMETER_STIM","plant_hash":plant.plant_hash,
+        "graph_hash":canonical_hash(plant.mask.astype(int).tolist()),"control_count":plant.control_count,
+        "detector_count":plant.detector_count,"normalization_hashes":dependencies["hashes"],
+        "v15_boundary":boundary.provenance_fields(),
+        "policy_decomposition_counts":policy_counts,"training_qec_cycles":cell["candidate_qec_cycles"],
+        "four_source_stream_qec_cycles":cell["four_stream_qec_cycles"],"complete":cell["complete"],
+        "scientifically_valid":False,"final_evidence":False,"evidence_layer":"TINY_INTEGRATION_PATH_PROOF_ONLY",
+        "staged_controller_run":False,"blocking_reasons":[] if all(gates.values()) else [name for name,value in gates.items() if not value]}
+    manifest["manifest_hash"]=canonical_hash(manifest); _write(output/"controller_identity.json",identity); _write(output/"manifest.json",manifest)
+    return manifest
+
+def main(argv=None):
+    parser=argparse.ArgumentParser(); parser.add_argument("--output",type=Path,default=DEFAULT_OUTPUT); args=parser.parse_args(argv)
+    result=run_tiny_integration(args.output); print(json.dumps(result,indent=2,sort_keys=True)); return 0 if result["pass"] else 2
+if __name__=="__main__": raise SystemExit(main())

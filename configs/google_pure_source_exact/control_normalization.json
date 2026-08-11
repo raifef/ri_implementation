@@ -1,0 +1,120 @@
+{
+  "schema_version": "google-pure-source-exact-control-normalization-config.v1",
+  "paper_doi": "10.1038/s41586-026-10759-2",
+  "normalization_method": "EMPIRICAL_DETECTOR_SENSITIVITY_FIG_S3",
+  "circuit": {
+    "engine": "stim.compile_detector_sampler",
+    "task": "surface_code:rotated_memory_z",
+    "distance": 3,
+    "rounds": 3,
+    "basis": "z",
+    "base_noise": {
+      "after_clifford_depolarization": 0.001,
+      "before_round_data_depolarization": 0.0005,
+      "before_measure_flip_probability": 0.001,
+      "after_reset_flip_probability": 0.001
+    },
+    "maximum_probability": 0.49
+  },
+  "control_types": [
+    {
+      "control_type": "xy_amplitude",
+      "gate_ids": ["xy_q0", "xy_q1", "xy_q2", "xy_q3", "xy_q4", "xy_q5", "xy_q6", "xy_q7"],
+      "native_unit": "relative_amplitude",
+      "reference_value_native": 1.0,
+      "sweep_sigmas_native": [0.0, 0.008, 0.012, 0.016, 0.02, 0.024, 0.028, 0.032],
+      "fit_interval_native": [0.0, 0.032],
+      "stim_error_channel": "after_clifford_depolarization",
+      "synthetic_probability_gain": 8.0,
+      "source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED"
+    },
+    {
+      "control_type": "cz_detuning",
+      "gate_ids": ["cz_e0", "cz_e1", "cz_e2", "cz_e3", "cz_e4", "cz_e5", "cz_e6", "cz_e7", "cz_e8", "cz_e9", "cz_e10", "cz_e11"],
+      "native_unit": "MHz",
+      "reference_value_native": 0.0,
+      "sweep_sigmas_native": [0.0, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0],
+      "fit_interval_native": [0.0, 1.0],
+      "stim_error_channel": "before_round_data_depolarization",
+      "synthetic_probability_gain": 0.008,
+      "source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED"
+    },
+    {
+      "control_type": "virtual_phase",
+      "gate_ids": ["phase_q0", "phase_q1", "phase_q2", "phase_q3", "phase_q4", "phase_q5", "phase_q6", "phase_q7"],
+      "native_unit": "radian",
+      "reference_value_native": 0.0,
+      "sweep_sigmas_native": [0.0, 0.125, 0.1875, 0.25, 0.3125, 0.375, 0.4375, 0.5],
+      "fit_interval_native": [0.0, 0.5],
+      "stim_error_channel": "before_measure_flip_probability",
+      "synthetic_probability_gain": 0.03,
+      "source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED"
+    },
+    {
+      "control_type": "reset_amplitude",
+      "gate_ids": ["reset_q0", "reset_q1", "reset_q2", "reset_q3", "reset_q4", "reset_q5", "reset_q6", "reset_q7"],
+      "native_unit": "relative_amplitude",
+      "reference_value_native": 1.0,
+      "sweep_sigmas_native": [0.0, 0.0325, 0.04875, 0.065, 0.08125, 0.0975, 0.11375, 0.13],
+      "fit_interval_native": [0.0, 0.13],
+      "stim_error_channel": "after_reset_flip_probability",
+      "synthetic_probability_gain": 0.5,
+      "source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED"
+    }
+  ],
+  "fit_rules": {
+    "confidence_z": 1.959963984540054,
+    "minimum_r_squared": 0.9,
+    "maximum_monotonicity_z": 3.0,
+    "maximum_quartic_z": 3.0,
+    "maximum_reduced_chi_squared": 4.0,
+    "minimum_positive_coefficient_z": 3.0,
+    "stability_relative_tolerance": 0.25,
+    "isotropy_relative_tolerance": 0.35,
+    "prediction_relative_tolerance": 0.35
+  },
+  "profiles": {
+    "smoke": {
+      "candidates_per_sigma": 12,
+      "shots_per_candidate": 256,
+      "perturbation_seed": 31001,
+      "detector_seed": 32001,
+      "validation_candidates": 20,
+      "validation_shots_per_candidate": 512,
+      "normalized_isotropy_sigma": 1.0,
+      "normalized_joint_sigma": 0.35
+    },
+    "reduced": {
+      "candidates_per_sigma": 24,
+      "shots_per_candidate": 1024,
+      "perturbation_seed": 33001,
+      "detector_seed": 34001,
+      "validation_candidates": 40,
+      "validation_shots_per_candidate": 2048,
+      "normalized_isotropy_sigma": 1.0,
+      "normalized_joint_sigma": 0.5
+    },
+    "full": {
+      "candidates_per_sigma": 64,
+      "shots_per_candidate": 12000,
+      "perturbation_seed": 35001,
+      "detector_seed": 36001,
+      "validation_candidates": 96,
+      "validation_shots_per_candidate": 12000,
+      "normalized_isotropy_sigma": 1.0,
+      "normalized_joint_sigma": 0.5
+    }
+  },
+  "seed_registry": {
+    "development": [31001, 32001, 33001, 34001, 35001, 36001],
+    "certification_reserved": [910001, 910002, 910003, 910004]
+  },
+  "source_literal_figure5a_budget": {
+    "epochs": 1000,
+    "candidates_per_epoch": 50,
+    "qec_cycles_per_candidate": 36000,
+    "total_qec_cycles": 1800000000,
+    "status": "SOURCE_LITERAL"
+  },
+  "legacy_algebraic_branch_label": "NON_PAPER_NORMALIZATION_ABLATION"
+}

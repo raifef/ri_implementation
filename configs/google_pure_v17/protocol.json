@@ -1,0 +1,44 @@
+{
+  "schema_version": "google-pure-v17-protocol.v1",
+  "mission": "Figure 5a protocol and dynamic tracking diagnosis without optimizer retuning",
+  "heldout_seeds": [],
+  "frequencies_per_epoch": {
+    "slow": 0.001,
+    "intermediate": 0.0033333333333333335,
+    "fast": 0.006666666666666667
+  },
+  "frequency_formula": "sin(2*pi*f*t + phase)",
+  "deterministic_fixture": {
+    "burn_in_periods": 1,
+    "evaluation_periods": 3,
+    "phase_radians": [0.0, 1.5707963267948966, 3.141592653589793, 4.71238898038469]
+  },
+  "reduced_acquisition": {
+    "epochs": 24,
+    "candidates_per_epoch": 8,
+    "qec_cycles_per_candidate": 300,
+    "seed": 82921,
+    "entropy_coefficient": 0.01,
+    "source_budget_profile": "V17_REDUCED_DEVELOPMENT_DIAGNOSTIC"
+  },
+  "transfer_identification": {
+    "minimum_observed_cycles": 1.0,
+    "maximum_design_condition_number": 100000.0,
+    "bootstrap_draws": 256
+  },
+  "acceptance_v2": {
+    "delta_min": 0.05,
+    "delta_min_basis": "predeclared minimum meaningful contrast exceeding the reduced finite-shot resolution and development noise floor",
+    "confidence": 0.95,
+    "required_complete_post_burnin_periods": 3,
+    "required_phases": [0.0, 1.5707963267948966, 3.141592653589793, 4.71238898038469]
+  },
+  "forbidden_auto_runs": [
+    "reference_campaign",
+    "source_budget_1000x50x36000",
+    "heldout_campaign",
+    "natural_drift",
+    "figure5c"
+  ],
+  "optimizer_changes_permitted": false
+}
