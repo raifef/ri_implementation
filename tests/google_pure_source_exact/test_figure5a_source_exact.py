@@ -26,11 +26,16 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.entropy_scan import (
     classify_anchor_rows,
     scan_contract,
 )
+from hdfa_rl_suite.google_pure_source_exact.figure5a.gradient_stability import (
+    gradient_stability_conditions,
+    plan_gradient_stability,
+)
 from hdfa_rl_suite.google_pure_source_exact.figure5a.plant import Figure5aStimPlant
 from hdfa_rl_suite.google_pure_source_exact.figure5a.normalization import (
     Figure5aEmpiricalBoundary,
     reward_representation_hash,
 )
+from hdfa_rl_suite.google_pure_source_exact.figure5a.round_invariance import plan_round_invariance
 from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import (
     build_plant,
     detector_equivalence_response_audit,
@@ -90,19 +95,20 @@ def test_distance3_inventory_is_exact_and_stim_derived(plant) -> None:
 
 
 def test_reward_components_are_time_translation_reduced_and_round_invariant(config, plant) -> None:
-    assert plant.raw_detector_count == 40
+    assert plant.rounds == 25
+    assert plant.raw_detector_count == 200
     assert plant.detector_count == 24
     assert plant.detector_count < plant.raw_detector_count
     assert sorted(raw for group in plant.reward_component_raw_detectors for raw in group) == \
         list(range(plant.raw_detector_count))
     longer = json.loads(json.dumps(config))
-    longer["plant"]["circuit_rounds"] = 7
-    seven_round_plant = build_plant(longer)
-    assert seven_round_plant.raw_detector_count == 56
-    assert seven_round_plant.detector_count == plant.detector_count
-    np.testing.assert_array_equal(seven_round_plant.mask, plant.mask)
+    longer["plant"]["circuit_rounds"] = 50
+    fifty_round_plant = build_plant(longer)
+    assert fifty_round_plant.raw_detector_count == 400
+    assert fifty_round_plant.detector_count == plant.detector_count
+    np.testing.assert_array_equal(fifty_round_plant.mask, plant.mask)
     np.testing.assert_array_equal(
-        seven_round_plant.mask.sum(axis=0), plant.mask.sum(axis=0))
+        fifty_round_plant.mask.sum(axis=0), plant.mask.sum(axis=0))
 
 
 def test_every_time_equivalence_class_has_equal_exact_marginal_response(plant) -> None:
@@ -222,7 +228,7 @@ def test_entropy_is_policy_level_and_not_multiplied_by_detector_degree(plant) ->
 
 
 def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plant) -> None:
-    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 30, plant.rounds)
+    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 50, plant.rounds)
     optimizer = OptimizerConfig(0.08, 0.02, 0.08, minimum_sigma=0.002, maximum_sigma=0.8)
     common = dict(protocol=protocol, plant=plant, frequency=0.1, entropy_weight=0.01,
                   seed=99, optimizer_config=optimizer, initial_sigma=0.15,
@@ -234,13 +240,20 @@ def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plan
     with pytest.raises(RuntimeError, match="checkpoint identity changed"):
         run_cell(**changed, checkpoint_path=tmp_path / "resume.json", resume=True)
     resumed = run_cell(**common, checkpoint_path=tmp_path / "resume.json", resume=True)
+    boundary = run_cell(**common, checkpoint_path=tmp_path / "last-boundary.json",
+                        max_candidate_boundaries=3)
+    assert not boundary["complete"] and boundary["next_candidate"] == 3
+    boundary_resumed = run_cell(
+        **common, checkpoint_path=tmp_path / "last-boundary.json", resume=True)
     assert resumed["stream_totals"] == mono["stream_totals"]
     assert resumed["epoch_records"] == mono["epoch_records"]
+    assert boundary_resumed["epoch_records"] == mono["epoch_records"]
     assert resumed["no_candidates_dropped"]
     assert resumed["candidate_boundaries_completed"] == 6
     assert resumed["schema_version"] == "figure5a-cell.v4"
     assert resumed["raw_detector_count"] > resumed["detector_count"]
     assert resumed["reward_representation"] == "time_translation_equivalence_class_mean_edr"
+    assert resumed["gradient_clipping_contract"]["applied_before_momentum"]
     assert resumed["action_execution"] == "identity_applied_gaussian"
     assert resumed["likelihood_space"] == "applied_gaussian"
     assert resumed["entropy_space"] == "applied_gaussian"
@@ -257,10 +270,12 @@ def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plan
                for record in resumed["epoch_records"])
     assert all(record["optimum"] == plant.optimum(record["epoch"], 0.1)[0]
                for record in resumed["epoch_records"])
+    assert all(record["gradient_clipping"]["gradient_clipping_mode"] == "none"
+               for record in resumed["epoch_records"])
 
 
 def test_batched_checkpoint_flush_is_bit_exact(tmp_path, plant) -> None:
-    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 30, plant.rounds)
+    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 50, plant.rounds)
     optimizer = OptimizerConfig(0.08, 0.02, 0.08, minimum_sigma=0.002, maximum_sigma=0.8)
     common = dict(protocol=protocol, plant=plant, frequency=0.1, entropy_weight=0.01,
                   seed=101, optimizer_config=optimizer, initial_sigma=0.15,
@@ -280,7 +295,7 @@ def test_batched_checkpoint_flush_is_bit_exact(tmp_path, plant) -> None:
 def test_source_entropy_anchors_and_dense_scan_share_frozen_contract(config, plant) -> None:
     conditions = build_conditions(config, mode=AcquisitionMode.SMOKE, scan="anchors")
     assert tuple(sorted({row["entropy_weight"] for row in conditions})) == SOURCE_ENTROPY_ANCHORS
-    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 30, plant.rounds)
+    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 50, plant.rounds)
     anchors = scan_contract(config, mode=AcquisitionMode.SMOKE, scan="anchors", protocol=protocol,
                             plant_hash=plant.plant_hash, controller_hash="controller")
     dense = scan_contract(config, mode=AcquisitionMode.SMOKE, scan="dense", protocol=protocol,
@@ -343,3 +358,22 @@ def test_reference_planner_reports_exact_cost(config, tmp_path) -> None:
     assert result["candidate_training_qec_cycles"] == 9 * 1_800_000_000
     assert result["four_stream_total_qec_cycles"] == 9 * 7_200_000_000
     assert result["reference_launch_requires_explicit_allow"]
+    assert result["reference_launch_blocked_by_unfrozen_hyperparameters"]
+
+
+def test_gradient_stability_plan_preserves_50_candidates_and_development_seeds(config) -> None:
+    result = plan_gradient_stability(config)
+    conditions = gradient_stability_conditions(config)
+    assert result["source_candidate_count_preserved"]
+    assert {row["qec_cycles_per_candidate"] for row in conditions} == {2000, 10000, 36000}
+    assert {row["gradient_clipping_mode"] for row in conditions} == {"per_component", "global_l2"}
+    assert not ({row["seed"] for row in conditions} & set(config["seed_registry"]["certification_reserved"]))
+    assert len({row["condition_id"] for row in conditions}) == len(conditions)
+
+
+def test_round_invariance_plan_equalizes_qec_cycles_without_launching(config) -> None:
+    result = plan_round_invariance(config)
+    assert result["rounds"] == [5, 10, 25, 50]
+    assert result["primary_rounds"] == 25
+    assert result["finite_qec_cycles"] == 4 * 3 * 50 * 36000
+    assert result["long_run_not_launched_by_plan"]

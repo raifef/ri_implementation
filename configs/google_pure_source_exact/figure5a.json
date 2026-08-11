@@ -11,7 +11,7 @@
   "plant": {
     "distance": 3,
     "basis": "z",
-    "circuit_rounds": 5,
+    "circuit_rounds": 25,
     "ensemble_seed": 53001,
     "one_qubit_irreducible": [0.0002, 0.0008],
     "two_qubit_irreducible": [0.001, 0.003],
@@ -20,19 +20,31 @@
     "maximum_probability": 0.49,
     "action_probability_margin_fraction": 0.000001,
     "ensemble_source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED",
-    "gate_site_injection_mapping_source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED"
+    "gate_site_injection_mapping_source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED",
+    "circuit_rounds_source_identifiability": "SOURCE_UNSPECIFIED_PRIMARY_CLEAN_ROOM_CHOICE",
+    "circuit_rounds_choice_note": "25 is the primary clean-room choice because the supplement describes 25-cycle quantum-memory experiments elsewhere; it is not claimed as the unpublished Figure 5a value and must pass the preregistered 5/10/25/50-round sensitivity analysis."
   },
   "controller": {
     "parameterization": "DIRECT_SIGMA_SOURCE_EXACT",
+    "reference_hyperparameters_frozen": false,
     "initial_sigma": 0.15,
-    "mean_learning_rate": 0.005,
-    "sigma_learning_rate": 0.002,
+    "mean_learning_rate": 0.08,
+    "sigma_learning_rate": 0.02,
     "baseline_learning_rate": 0.08,
     "baseline_weight": 0.2,
     "ppo_clip": 0.2,
     "minimum_sigma": 0.002,
     "maximum_sigma": 0.8,
     "positivity_guard": "projected_gradient",
+    "gradient_clipping": {
+      "selected_mode": "global_l2",
+      "selected_threshold": 1.0,
+      "global_l2_scope": "mean_sigma_and_detector_baseline_joint",
+      "applied_before_momentum": true,
+      "source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED_NUISANCE",
+      "candidate_modes": ["per_component", "global_l2"],
+      "candidate_thresholds": [0.25, 0.5, 1.0, 2.0, 5.0]
+    },
     "action_execution": {
       "policy_space": "applied_dimensionless_gate_controls_p",
       "plant_space": "applied_dimensionless_gate_controls_p",
@@ -49,14 +61,19 @@
       "entropy": "one policy-level sum over 41 controls",
       "detector_degree_entropy_multiplication": false
     },
-    "source_identifiability": "SOURCE_UNSPECIFIED_DEVELOPMENT_TUNED",
-    "development_tuning_note": "Reduced only after the direct source-coordinate 250-epoch validation exposed unstable unbounded-mean updates; not claimed as a published Google hyperparameter."
+    "source_identifiability": "SOURCE_UNSPECIFIED_PROVISIONAL_PENDING_50_CANDIDATE_LADDER",
+    "development_tuning_note": "The earlier 0.005/0.002 rates were selected with 8 candidates and 600 QEC cycles per candidate, 375 times less candidate acquisition per epoch than the source budget. They are retained only as nuisance candidates; the provisional selected 0.08/0.02 pair must be tuned jointly with clipping on development seeds at 50 candidates before any reference claim.",
+    "learning_rate_candidates": [
+      {"mean": 0.005, "sigma": 0.002, "label": "low_information_legacy"},
+      {"mean": 0.02, "sigma": 0.005, "label": "intermediate"},
+      {"mean": 0.08, "sigma": 0.02, "label": "pre_reduction_primary_provisional"}
+    ]
   },
   "profiles": {
     "smoke": {
       "epochs": 2,
       "candidates_per_epoch": 3,
-      "qec_cycles_per_candidate": 30,
+      "qec_cycles_per_candidate": 50,
       "seeds": [53101]
     },
     "validation": {
@@ -95,6 +112,37 @@
   "seed_registry": {
     "development": [53101, 53201, 53202, 53203, 53301, 53302, 53303],
     "certification_reserved": [930001, 930002, 930003]
+  },
+  "gradient_stability_ladder": {
+    "scientific_status": "DEVELOPMENT_ONLY_NOT_REFERENCE_EVIDENCE",
+    "candidates_per_epoch": 50,
+    "qec_cycles_per_candidate": [2000, 10000, 36000],
+    "stationary_epochs": 8,
+    "step_epochs": 20,
+    "stationary_target": 0.0,
+    "step_target": 0.5,
+    "entropy_weight": 0.01,
+    "development_seeds": [53401, 53402, 53403],
+    "selection_rule": "Select clipping geometry, threshold, and mean/sigma learning rates jointly using only development seeds; compare gradient SNR and physical post-update performance across acquisition levels before freezing the reference controller."
+  },
+  "circuit_round_invariance": {
+    "scientific_status": "SOURCE_UNSPECIFIED_PREREGISTERED_NUISANCE",
+    "rounds": [5, 10, 25, 50],
+    "primary_rounds": 25,
+    "candidates": 50,
+    "qec_cycles_per_policy": 36000,
+    "frequency": 0.001,
+    "epoch": 125,
+    "entropy_weight_for_reward_gradient": 0.0,
+    "development_seed": 53501,
+    "metrics": ["EDR", "grad_mu_J", "grad_sigma_J", "r"],
+    "near_invariance_definition": {
+      "maximum_EDR_absolute_delta": 0.0005,
+      "minimum_gradient_cosine": 0.99,
+      "maximum_gradient_relative_l2_delta": 0.1,
+      "maximum_r_absolute_delta": 0.02,
+      "scientific_status": "PREREGISTERED_CLEAN_ROOM_TOLERANCE_NOT_SOURCE_DERIVED"
+    }
   },
   "planning": {
     "estimated_stim_shots_per_second": 1500000,

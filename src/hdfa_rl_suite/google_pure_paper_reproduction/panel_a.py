@@ -12,7 +12,10 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import Acquisitio
 from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_plant, dependency_hashes
 from hdfa_rl_suite.google_pure_source_exact.identity import build_direct_sigma_identity
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.contracts import PositivityGuard
-from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import OptimizerConfig
+from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import (
+    GradientClippingMode,
+    OptimizerConfig,
+)
 from hdfa_rl_suite.google_pure_v7.config import repository_root
 
 
@@ -21,12 +24,19 @@ def acquire_condition(protocol: Mapping[str, Any], condition: Mapping[str, Any])
     source_config = json.loads((root / "configs/google_pure_source_exact/figure5a.json").read_text(encoding="utf-8"))
     plant = build_plant(source_config); config = protocol["config"]
     mode = AcquisitionMode.REFERENCE if protocol["mode"] in {"reference", "paper-scale"} else AcquisitionMode(protocol["mode"])
+    if mode == AcquisitionMode.REFERENCE and not source_config["controller"]["reference_hyperparameters_frozen"]:
+        raise RuntimeError(
+            "reference Figure 5a is blocked until clipping and learning rates are frozen "
+            "from the 50-candidate development ladder")
     source_protocol = Figure5aProtocol(mode, int(config["epochs"]), int(config["candidates"]),
                                       int(config["cycles_per_candidate"]), int(source_config["plant"]["circuit_rounds"]))
     value = source_config["controller"]
+    clipping = value["gradient_clipping"]
     optimizer = OptimizerConfig(float(value["mean_learning_rate"]), float(value["sigma_learning_rate"]),
         float(value["baseline_learning_rate"]), minimum_sigma=float(value["minimum_sigma"]),
-        maximum_sigma=float(value["maximum_sigma"]), positivity_guard=PositivityGuard(value["positivity_guard"]))
+        maximum_sigma=float(value["maximum_sigma"]), positivity_guard=PositivityGuard(value["positivity_guard"]),
+        gradient_clipping_mode=GradientClippingMode(clipping["selected_mode"]),
+        gradient_clip_threshold=float(clipping["selected_threshold"]))
     identity = build_direct_sigma_identity(root)
     cell_id = canonical_hash({"protocol_hash":protocol["protocol_hash"],"condition":dict(condition)})[:24]
     checkpoint = root / "artifacts/google_pure_source_exact/paper_families/checkpoints/figure5a" / f"{cell_id}.json"

@@ -24,6 +24,7 @@ from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.gaussian imp
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.losses import total_loss_and_gradients
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import (
     DirectSigmaOptimizer,
+    GradientClippingMode,
     OptimizerConfig,
 )
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.validation import (
@@ -113,6 +114,62 @@ def test_direct_checkpoint_has_sigma_and_no_hidden_log_conversion(tmp_path) -> N
     assert not {"log_sigma", "log_scale", "eta"}.intersection(loaded)
     restored = DirectSigmaGaussianPolicy.from_state_dict(loaded)
     np.testing.assert_array_equal(restored.sigma, policy.sigma)
+
+
+def test_per_component_gradient_clipping_is_applied_before_momentum() -> None:
+    mean, sigma, baseline = np.zeros(2), np.ones(2), np.zeros(1)
+    optimizer = DirectSigmaOptimizer(2, 1, OptimizerConfig(
+        1.0, 1.0, 1.0, momentum=0.5,
+        gradient_clipping_mode=GradientClippingMode.PER_COMPONENT,
+        gradient_clip_threshold=2.0))
+    diagnostics = optimizer.step(
+        mean, sigma, baseline,
+        np.asarray([3.0, -1.0]), np.asarray([0.5, -4.0]), np.asarray([5.0]))
+    np.testing.assert_array_equal(optimizer.mean_velocity, np.asarray([2.0, -1.0]))
+    np.testing.assert_array_equal(optimizer.sigma_velocity, np.asarray([0.5, -2.0]))
+    np.testing.assert_array_equal(optimizer.baseline_velocity, np.asarray([2.0]))
+    assert diagnostics["gradient_clipping_mode"] == "per_component"
+    assert diagnostics["gradient_clipped_component_count"] == 3
+    assert diagnostics["gradient_global_clip_scale"] == 1.0
+
+
+def test_global_l2_gradient_clipping_uses_one_joint_scale_and_round_trips() -> None:
+    mean, sigma, baseline = np.zeros(1), np.ones(1), np.zeros(1)
+    config = OptimizerConfig(
+        1.0, 1.0, 1.0, maximum_sigma=10.0,
+        gradient_clipping_mode=GradientClippingMode.GLOBAL_L2,
+        gradient_clip_threshold=5.0)
+    optimizer = DirectSigmaOptimizer(1, 1, config)
+    diagnostics = optimizer.step(
+        mean, sigma, baseline, np.asarray([3.0]), np.asarray([4.0]), np.asarray([0.0]))
+    np.testing.assert_allclose(optimizer.mean_velocity, [3.0])
+    np.testing.assert_allclose(optimizer.sigma_velocity, [4.0])
+    assert diagnostics["gradient_global_l2_norm_before_clipping"] == pytest.approx(5.0)
+    assert diagnostics["gradient_global_l2_norm_after_clipping"] == pytest.approx(5.0)
+    restored = DirectSigmaOptimizer.from_state_dict(optimizer.state_dict())
+    assert restored.config.gradient_clipping_mode == GradientClippingMode.GLOBAL_L2
+    assert restored.config.gradient_clip_threshold == 5.0
+
+    clipped = DirectSigmaOptimizer(1, 1, OptimizerConfig(
+        1.0, 1.0, 1.0, maximum_sigma=10.0,
+        gradient_clipping_mode="global_l2", gradient_clip_threshold=2.5))
+    diagnostics = clipped.step(
+        np.zeros(1), np.ones(1), np.zeros(1),
+        np.asarray([3.0]), np.asarray([4.0]), np.asarray([0.0]))
+    np.testing.assert_allclose(clipped.mean_velocity, [1.5])
+    np.testing.assert_allclose(clipped.sigma_velocity, [2.0])
+    assert diagnostics["gradient_global_clip_scale"] == pytest.approx(0.5)
+    assert diagnostics["gradient_global_l2_norm_after_clipping"] == pytest.approx(2.5)
+
+
+@pytest.mark.parametrize(
+    ("mode", "threshold"),
+    [("none", 1.0), ("global_l2", None), ("per_component", 0.0)],
+)
+def test_gradient_clipping_configuration_fails_closed(mode: str, threshold: float | None) -> None:
+    with pytest.raises(ValueError):
+        OptimizerConfig(0.1, 0.1, 0.1, gradient_clipping_mode=mode,
+                        gradient_clip_threshold=threshold)
 
 
 @pytest.mark.parametrize("guard", list(PositivityGuard))

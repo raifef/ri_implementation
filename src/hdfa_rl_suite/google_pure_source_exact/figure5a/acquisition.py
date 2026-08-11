@@ -138,6 +138,12 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             state["policy"] = policy.state_dict(optimizer_state=optimizer.state_dict(), baseline=baseline)
             atomic_json(checkpoint_path, state)
         active = state["active_batch"]
+        # Reconstruct epoch-level controls even when resuming exactly after the
+        # final candidate boundary, in which case the sampling loop is skipped.
+        optimum, controls = source_controls_for_epoch(
+            plant, epoch=epoch, frequency=frequency,
+            stochastic=np.asarray(active["applied_actions"])[-1],
+            learned_mean=np.asarray(active["applied_behavior_mean"]))
         while int(active["next_candidate"]) < protocol.candidates_per_epoch:
             candidate = int(active["next_candidate"])
             optimum, controls = source_controls_for_epoch(
@@ -216,6 +222,15 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             "reward_sigma_gradient_norm": loss.diagnostics["reward_sigma_gradient_norm"],
             "entropy_sigma_gradient_norm": loss.diagnostics["entropy_sigma_gradient_norm"],
             "fraction_at_positivity_guard": update["fraction_at_positivity_guard"],
+            "gradient_clipping": {key: update[key] for key in (
+                "gradient_clipping_mode", "gradient_clip_threshold",
+                "gradient_global_l2_norm_before_clipping",
+                "gradient_global_l2_norm_after_clipping", "gradient_global_clip_scale",
+                "gradient_component_count", "gradient_clipped_component_count",
+                "gradient_clipped_component_fraction",
+                "raw_mean_gradient_l2_norm", "raw_sigma_gradient_l2_norm",
+                "raw_baseline_gradient_l2_norm", "applied_mean_gradient_l2_norm",
+                "applied_sigma_gradient_l2_norm", "applied_baseline_gradient_l2_norm")},
             "candidate_count": protocol.candidates_per_epoch,
             "qec_cycles_per_candidate": protocol.qec_cycles_per_candidate,
         }
@@ -267,6 +282,12 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
         "mean_bounds_applied": False,
         "detector_count": plant.detector_count, "raw_detector_count": plant.raw_detector_count,
         "reward_representation": "time_translation_equivalence_class_mean_edr",
+        "gradient_clipping_contract": {
+            "mode": optimizer_config.gradient_clipping_mode.value,
+            "threshold": optimizer_config.gradient_clip_threshold,
+            "source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED_NUISANCE",
+            "applied_before_momentum": True,
+            "global_l2_scope": "mean_sigma_and_detector_baseline_joint"},
         "stream_totals": totals,
         "stochastic_ratio": ratios, "learned_mean_ratio": learned_ratios,
         "finite_shot_denominator_nonzero": finite_shot_denominator_nonzero,

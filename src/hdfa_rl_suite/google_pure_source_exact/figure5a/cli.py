@@ -10,13 +10,20 @@ import time
 from typing import Any
 
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.contracts import PositivityGuard
-from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import OptimizerConfig
+from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import (
+    GradientClippingMode,
+    OptimizerConfig,
+)
 
 from .acquisition import run_cell, substitution_identity
 from .contracts import (AcquisitionMode, Figure5aProtocol, atomic_json, build_source_contract,
                         canonical_hash, file_sha256)
 from .entropy_scan import build_conditions, classify_anchor_rows, scan_contract
+from .gradient_stability import (gradient_stability_conditions, plan_gradient_stability,
+                                 run_gradient_stability_condition,
+                                 summarize_gradient_stability)
 from .normalization import build_empirical_normalization
+from .round_invariance import plan_round_invariance, run_round_invariance
 from .validation import build_plant, dependency_hashes, physical_preflight
 
 
@@ -39,11 +46,14 @@ def _protocol(config: dict[str, Any], mode: AcquisitionMode) -> Figure5aProtocol
 
 def _optimizer(config: dict[str, Any]) -> OptimizerConfig:
     value = config["controller"]
+    clipping = value["gradient_clipping"]
     return OptimizerConfig(float(value["mean_learning_rate"]), float(value["sigma_learning_rate"]),
                            float(value["baseline_learning_rate"]),
                            minimum_sigma=float(value["minimum_sigma"]),
                            maximum_sigma=float(value["maximum_sigma"]),
-                           positivity_guard=PositivityGuard(value["positivity_guard"]))
+                           positivity_guard=PositivityGuard(value["positivity_guard"]),
+                           gradient_clipping_mode=GradientClippingMode(clipping["selected_mode"]),
+                           gradient_clip_threshold=float(clipping["selected_threshold"]))
 
 
 def _controller_hash(config: dict[str, Any]) -> str:
@@ -73,6 +83,9 @@ def plan(config_path: Path, output: Path, *, mode: AcquisitionMode, scan: str) -
                "estimated_storage_bytes": conditions * protocol.epochs * protocol.candidates_per_epoch * 28 * 6,
                "checkpoint_directory": str((output / "checkpoints" / mode.value / scan).resolve()),
                "reference_launch_requires_explicit_allow": mode == AcquisitionMode.REFERENCE,
+               "reference_launch_blocked_by_unfrozen_hyperparameters": bool(
+                   mode == AcquisitionMode.REFERENCE and
+                   not config["controller"]["reference_hyperparameters_frozen"]),
                "certification_seeds_consumed_by_plan": False,
                "warning": "sampling estimate excludes candidate-specific Stim compilation and JSON checkpoint I/O"}
     atomic_json(output / "plans" / f"{mode.value}_{scan}.json", payload)
@@ -89,6 +102,10 @@ def run_condition(config_path: Path, output: Path, *, mode: AcquisitionMode, sca
     if mode == AcquisitionMode.REFERENCE:
         if not allow_reference:
             raise RuntimeError("reference acquisition requires --allow-reference after reviewing the plan")
+        if not config["controller"]["reference_hyperparameters_frozen"]:
+            raise RuntimeError(
+                "reference acquisition is blocked until clipping and learning rates are frozen "
+                "from the 50-candidate development ladder")
         preflight_path = output / "preflight.json"
         if not preflight_path.exists() or not _load(preflight_path)["pass"]:
             raise RuntimeError("reference acquisition blocked until physical preflight passes")
@@ -226,6 +243,16 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("source-contract"); sub.add_parser("calibrate-normalization")
     sub.add_parser("preflight")
+    sub.add_parser("plan-gradient-stability")
+    gradient_run = sub.add_parser("run-gradient-stability")
+    gradient_run.add_argument("--condition-index", type=int, required=True)
+    gradient_run.add_argument("--resume", action="store_true")
+    gradient_run.add_argument("--max-epochs", type=int)
+    gradient_run.add_argument("--allow-development-run", action="store_true")
+    sub.add_parser("summarize-gradient-stability")
+    sub.add_parser("plan-round-invariance")
+    round_run = sub.add_parser("run-round-invariance")
+    round_run.add_argument("--allow-development-run", action="store_true")
     for name in ("plan", "run", "merge"):
         item = sub.add_parser(name); item.add_argument("--mode", choices=[value.value for value in AcquisitionMode], required=True); item.add_argument("--scan", choices=("anchors", "dense"), required=True)
         if name == "run": item.add_argument("--condition-index", type=int, required=True); item.add_argument("--resume", action="store_true"); item.add_argument("--allow-reference", action="store_true"); item.add_argument("--max-candidate-boundaries", type=int)
@@ -236,6 +263,33 @@ def main(argv: list[str] | None = None) -> int:
         plant = build_plant(config); result = build_empirical_normalization(plant)
         atomic_json(ROOT / config["ablations"]["empirical_relative_normalization_bundle"], result)
     elif args.command == "preflight": result = physical_preflight(ROOT, config); atomic_json(args.output / "preflight.json", result); plant = build_plant(config); atomic_json(args.output / "parameter_inventory.json", {"plant_hash": plant.plant_hash, "rows": plant.inventory_rows()}); atomic_json(args.output / "detector_mask.json", {"plant_hash": plant.plant_hash, "mask": plant.mask.astype(int).tolist()})
+    elif args.command == "plan-gradient-stability":
+        result = plan_gradient_stability(config)
+        atomic_json(args.output / "plans" / "gradient_stability.json", result)
+    elif args.command == "run-gradient-stability":
+        if not args.allow_development_run:
+            raise RuntimeError("gradient-stability acquisition requires --allow-development-run after reviewing the plan")
+        conditions = gradient_stability_conditions(config)
+        if not 0 <= args.condition_index < len(conditions):
+            raise ValueError("gradient-stability condition index is outside the frozen grid")
+        condition_id = conditions[args.condition_index]["condition_id"]
+        checkpoint = args.output / "gradient_stability" / "checkpoints" / f"{condition_id}.json"
+        result = run_gradient_stability_condition(
+            config, condition_index=args.condition_index, checkpoint_path=checkpoint,
+            resume=args.resume, max_epochs=args.max_epochs)
+        if result.get("complete"):
+            atomic_json(args.output / "gradient_stability" / "results" / f"{condition_id}.json", result)
+    elif args.command == "summarize-gradient-stability":
+        result = summarize_gradient_stability(config, args.output / "gradient_stability" / "results")
+        atomic_json(args.output / "gradient_stability" / "summary.json", result)
+    elif args.command == "plan-round-invariance":
+        result = plan_round_invariance(config)
+        atomic_json(args.output / "plans" / "round_invariance.json", result)
+    elif args.command == "run-round-invariance":
+        if not args.allow_development_run:
+            raise RuntimeError("round-invariance acquisition requires --allow-development-run after reviewing the plan")
+        result = run_round_invariance(config)
+        atomic_json(args.output / "round_invariance.json", result)
     else:
         mode = AcquisitionMode(args.mode)
         if args.command == "plan": result = plan(args.config, args.output, mode=mode, scan=args.scan)

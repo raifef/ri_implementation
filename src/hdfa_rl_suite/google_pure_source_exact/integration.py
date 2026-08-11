@@ -7,7 +7,7 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import run_cell
 from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import AcquisitionMode, Figure5aProtocol, canonical_hash
 from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_plant, dependency_hashes, validate_dependencies
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.contracts import PositivityGuard
-from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import OptimizerConfig
+from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import GradientClippingMode, OptimizerConfig
 from .identity import build_direct_sigma_identity, require_direct_sigma_identity
 
 ROOT=Path(__file__).resolve().parents[3]
@@ -22,10 +22,13 @@ def run_tiny_integration(output: Path=DEFAULT_OUTPUT) -> dict:
     config=json.loads(config_path.read_text(encoding="utf-8")); identity=build_direct_sigma_identity(ROOT)
     require_direct_sigma_identity(identity); plant=build_plant(config); dependencies=validate_dependencies(ROOT,config)
     controller=config["controller"]
+    clipping=controller["gradient_clipping"]
     optimizer=OptimizerConfig(float(controller["mean_learning_rate"]),float(controller["sigma_learning_rate"]),
         float(controller["baseline_learning_rate"]),minimum_sigma=float(controller["minimum_sigma"]),
-        maximum_sigma=float(controller["maximum_sigma"]),positivity_guard=PositivityGuard(controller["positivity_guard"]))
-    protocol=Figure5aProtocol(AcquisitionMode.SMOKE,2,3,30,int(config["plant"]["circuit_rounds"]))
+        maximum_sigma=float(controller["maximum_sigma"]),positivity_guard=PositivityGuard(controller["positivity_guard"]),
+        gradient_clipping_mode=GradientClippingMode(clipping["selected_mode"]),
+        gradient_clip_threshold=float(clipping["selected_threshold"]))
+    protocol=Figure5aProtocol(AcquisitionMode.SMOKE,2,3,50,int(config["plant"]["circuit_rounds"]))
     checkpoint=output/f"checkpoint-{identity['controller_hash'][:12]}-{identity['controller_code_hash'][:12]}.json"
     cell=run_cell(protocol=protocol,plant=plant,frequency=float(config["anchor"]["frequency"]),
         entropy_weight=float(config["anchor"]["entropy_weights"][0]),seed=53101,optimizer_config=optimizer,
