@@ -15,6 +15,13 @@ from hdfa_rl_suite.google_pure_source_exact.source_normalization import (
     require_v15_boundary_provenance,
 )
 
+FIGURE5A_FAMILY = "FIGURE5A_REAL_TIME_STEERING"
+FIGURE5A_PROTOCOL_KEYS = (
+    "implementation_version", "coordinate_contract", "action_execution",
+    "plant_boundary_execution", "likelihood_space", "entropy_space",
+    "empirical_relative_normalization_applied", "mean_bounds_applied",
+)
+
 
 REQUIRED_DIRS = (
     "source_contract", "claim_registry", "experiment_protocols", "paper_assets",
@@ -58,7 +65,19 @@ def _run_dir(protocol: Mapping[str, Any]) -> Path:
     return initialise_layout() / "synthetic_reproduction" / slugs[protocol["experiment_family"]] / protocol["protocol_hash"][:16]
 
 
-def _validated_v15(protocol: Mapping[str, Any], data: Mapping[str, Any]) -> dict[str, Any]:
+def _validated_execution(protocol: Mapping[str, Any], data: Mapping[str, Any]) -> dict[str, Any]:
+    if protocol["experiment_family"] == FIGURE5A_FAMILY:
+        execution = dict(data.get("source_coordinate_provenance") or {})
+        for key in FIGURE5A_PROTOCOL_KEYS:
+            if execution.get(key) != protocol.get(key):
+                raise RuntimeError(f"Figure 5a source-coordinate driver/protocol mismatch for {key}")
+        if not execution.get("control_order_hash"):
+            raise RuntimeError("Figure 5a source-coordinate provenance lacks a control-order hash")
+        if bool(protocol.get("fresh_acquisition_required")) and not execution.get("fresh_acquisition"):
+            raise RuntimeError("fresh acquisition protocol received reused lower-level state")
+        if execution.get("reused_shard_ids"):
+            raise RuntimeError("a newly written Figure 5a shard cannot inherit reused shard ids")
+        return execution
     boundary = dict(data.get("v15_provenance") or {})
     require_v15_boundary_provenance(boundary)
     for key in (
@@ -79,6 +98,13 @@ def _validate_shard(protocol: Mapping[str, Any], row: Mapping[str, Any]) -> None
     if row.get("identity", {}).get("protocol_hash") != protocol["protocol_hash"]:
         raise RuntimeError("stale shard has the wrong protocol hash")
     provenance = row.get("provenance", {})
+    if protocol["experiment_family"] == FIGURE5A_FAMILY:
+        for key in (*FIGURE5A_PROTOCOL_KEYS, "experiment_driver_hash", "source_budget_profile"):
+            if provenance.get(key) != protocol.get(key):
+                raise RuntimeError(f"stale or incompatible Figure 5a shard: {key}")
+        if not provenance.get("control_order_hash"):
+            raise RuntimeError("stale Figure 5a shard lacks a control-order hash")
+        return
     require_v15_boundary_provenance(provenance)
     for key in (
         "implementation_version", "sensitivity_map_hash", "sensitivity_definition_hash",
@@ -101,14 +127,17 @@ def write_shard(protocol: Mapping[str, Any], condition: Mapping[str, Any], data:
         if old.get("identity") != identity or canonical_hash(old.get("data")) != canonical_hash(dict(data)):
             raise RuntimeError(f"duplicate shard identity with changed content: {sid}")
         return old
-    boundary = _validated_v15(protocol, data)
+    execution = _validated_execution(protocol, data)
+    source_coordinate = execution if protocol["experiment_family"] == FIGURE5A_FAMILY else None
+    boundary = execution if source_coordinate is None else None
     provenance = make_provenance(
         protocol["experiment_family"], protocol_hash=protocol["protocol_hash"], mode=protocol["mode"],
         plant_hash=protocol["plant_hash"], graph_hash=protocol["graph_hash"], shard_ids=[sid],
-        v15_provenance=boundary, experiment_driver_hash=protocol["experiment_driver_hash"],
-        fresh_acquisition=bool(boundary["fresh_acquisition"]),
-        reused_shard_ids=list(boundary["reused_shard_ids"]),
-        source_budget_profile=str(boundary["source_budget_profile"]),
+        v15_provenance=boundary, source_coordinate_provenance=source_coordinate,
+        experiment_driver_hash=protocol["experiment_driver_hash"],
+        fresh_acquisition=bool(execution["fresh_acquisition"]),
+        reused_shard_ids=list(execution["reused_shard_ids"]),
+        source_budget_profile=str(execution["source_budget_profile"]),
     )
     record = {
         "schema_version": "google-paper-reproduction-shard.v1", "shard_id": sid,
@@ -164,19 +193,28 @@ def merge(protocol: Mapping[str, Any], *, allow_partial: bool = False) -> dict[s
     ids = [row["shard_id"] for row in records]
     first = records[0]["provenance"]
     order_hashes = sorted({row["provenance"]["control_order_hash"] for row in records})
-    scale_hashes = sorted({row["provenance"]["expanded_scale_hash"] for row in records})
-    boundary = dict(first)
-    boundary["control_order_hash"] = v15_canonical_hash(order_hashes)
-    boundary["expanded_scale_hash"] = v15_canonical_hash(scale_hashes)
+    figure5a = protocol["experiment_family"] == FIGURE5A_FAMILY
+    scale_hashes = ([] if figure5a else
+                    sorted({row["provenance"]["expanded_scale_hash"] for row in records}))
+    execution = dict(first)
+    if figure5a:
+        if len(order_hashes) != 1:
+            raise RuntimeError("Figure 5a shards disagree on the exact 41-control ordering")
+        execution["control_order_hash"] = order_hashes[0]
+    else:
+        execution["control_order_hash"] = v15_canonical_hash(order_hashes)
+        execution["expanded_scale_hash"] = v15_canonical_hash(scale_hashes)
     fresh = all(bool(row["provenance"].get("fresh_acquisition")) for row in records)
     reused = sorted({reused_id for row in records
                      for reused_id in row["provenance"].get("reused_shard_ids", [])})
     if protocol.get("fresh_acquisition_required") and (not fresh or reused):
-        raise RuntimeError("fresh V15 merge contains reused evidence")
+        raise RuntimeError("fresh merge contains reused evidence")
     provenance = make_provenance(
         protocol["experiment_family"], protocol_hash=protocol["protocol_hash"], mode=protocol["mode"],
         plant_hash=protocol["plant_hash"], graph_hash=protocol["graph_hash"], complete=complete, shard_ids=ids,
-        v15_provenance=boundary, experiment_driver_hash=protocol["experiment_driver_hash"],
+        v15_provenance=None if figure5a else execution,
+        source_coordinate_provenance=execution if figure5a else None,
+        experiment_driver_hash=protocol["experiment_driver_hash"],
         fresh_acquisition=fresh, reused_shard_ids=reused,
         source_budget_profile=str(protocol["source_budget_profile"]),
     )

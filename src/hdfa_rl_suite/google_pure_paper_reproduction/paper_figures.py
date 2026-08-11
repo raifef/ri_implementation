@@ -10,6 +10,9 @@ import numpy as np
 
 from hdfa_rl_suite.google_pure_v7.config import canonical_hash
 from hdfa_rl_suite.google_pure_source_exact.paper_families.common import amended_family_identities
+from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import (
+    COORDINATE_CONTRACT, FIGURE5A_IMPLEMENTATION_VERSION,
+)
 from hdfa_rl_suite.google_pure_source_exact.source_normalization import (
     BOUNDARY_TRANSFORM_NAME,
     IMPLEMENTATION_VERSION,
@@ -116,7 +119,6 @@ def build_protocol(family: str, *, mode: str = "smoke", config_path: str | Path 
         from hdfa_rl_suite.google_pure_v7.figure5.accounting import total_controls
         maximum_controls=max(total_controls(int(row["distance"]),int(row["parameters_per_gate"])) for row in conditions)
     else: maximum_controls=int(config.get("controls",41))
-    inputs = source_normalization_inputs()
     payload = {"schema_version": "google-paper-protocol.v4", "experiment_family": family, "mode": RunMode(mode).value,
                "config": config, "conditions": conditions, "condition_count": len(conditions), "plant_hash": plant_hash, "graph_hash": graph_hash,
                "controller_hash": expected["controller_hash"], "controller_code_hash": expected["controller_code_hash"],
@@ -126,13 +128,6 @@ def build_protocol(family: str, *, mode: str = "smoke", config_path: str | Path 
                "expected_controller_code_hash": expected["controller_code_hash"],
                "expected_parameterization": expected["parameterization"],
                "execution_path": "AMENDED_DIRECT_SIGMA_SOURCE_STRUCTURED_ANALOGUE",
-               "implementation_version": IMPLEMENTATION_VERSION,
-               "sensitivity_map_hash": sensitivity_map_hash_for_family(family),
-               "sensitivity_definition_hash": inputs["sensitivity_definition_hash"],
-               "calibration_bundle_hash": inputs["calibration_bundle_hash"],
-               "detector_degree_audit_hash": inputs["detector_degree_audit_hash"],
-               "boundary_transform_name": BOUNDARY_TRANSFORM_NAME,
-               "boundary_transform_hash": boundary_transform_hash(),
                "experiment_driver_hash": _experiment_driver_hash(family),
                "source_budget_profile": str(config.get("profile_name", mode)),
                "workflow_mode": str(workflow_mode),
@@ -145,6 +140,28 @@ def build_protocol(family: str, *, mode: str = "smoke", config_path: str | Path 
                    "checkpoint_boundary":"candidate" if family==F.STEP_RESPONSE_INJECTED_DRIFT.value else "epoch_candidate_batch",
                    "estimated_action_values_per_epoch":int(config.get("candidates",0))*maximum_controls,
                    "long_run_not_launched_by_plan":True}}
+    if family == F.FIGURE5A_REAL_TIME_STEERING.value:
+        payload.update({
+            "implementation_version": FIGURE5A_IMPLEMENTATION_VERSION,
+            "coordinate_contract": COORDINATE_CONTRACT,
+            "action_execution": "identity_applied_gaussian",
+            "plant_boundary_execution": "none_source_coordinate_identity",
+            "likelihood_space": "applied_gaussian",
+            "entropy_space": "applied_gaussian",
+            "empirical_relative_normalization_applied": False,
+            "mean_bounds_applied": False,
+        })
+    else:
+        inputs = source_normalization_inputs()
+        payload.update({
+            "implementation_version": IMPLEMENTATION_VERSION,
+            "sensitivity_map_hash": sensitivity_map_hash_for_family(family),
+            "sensitivity_definition_hash": inputs["sensitivity_definition_hash"],
+            "calibration_bundle_hash": inputs["calibration_bundle_hash"],
+            "detector_degree_audit_hash": inputs["detector_degree_audit_hash"],
+            "boundary_transform_name": BOUNDARY_TRANSFORM_NAME,
+            "boundary_transform_hash": boundary_transform_hash(),
+        })
     payload["protocol_hash"] = canonical_hash(payload); save_protocol(payload); return payload
 
 

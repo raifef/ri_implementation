@@ -32,43 +32,85 @@ def dependency_hashes(root: Path, config: Mapping[str, Any]) -> dict[str, str]:
 
 
 def validate_dependencies(root: Path, config: Mapping[str, Any]) -> dict[str, Any]:
-    normalization_path = root / config["dependencies"]["normalization_bundle"]
     direct_path = root / config["dependencies"]["direct_sigma_status"]
-    normalization = json.loads(normalization_path.read_text(encoding="utf-8"))
     direct = json.loads(direct_path.read_text(encoding="utf-8"))
     plant = build_plant(config)
-    boundary = Figure5aEmpiricalBoundary.from_artifact(plant, normalization)
     gates = {
-        "figure5a_normalization_bound_to_exact_plant": normalization["plant_hash"] == plant.plant_hash,
-        "normalization_bound_to_reduced_reward":
-            normalization["reward_representation_hash"] == reward_representation_hash(plant),
-        "empirical_normalization_math_pass": bool(normalization["mathematical_contract_pass"]),
-        "literal_fractional_edr_convention": normalization["edr_unit"] == "fraction"
-            and normalization["source_literal_target_edr_increase_fraction"] == 1.0
-            and not normalization["percentage_point_conversion_applied"],
-        "no_analytic_degree_shortcut": not normalization["analytic_omega_times_degree_shortcut_used"],
-        "absolute_scale_nonidentifiability_preserved":
-            normalization["absolute_source_scale_identifiable"] is False,
-        "relative_curvature_equalization_applied":
-            normalization["applied_scale_kind"] == "relative_empirical_curvature_equalization",
-        "safe_normalized_action_domain": bool(
-            np.all(plant.normalized_control_limits(boundary.native_scale) > 1.0)),
         "direct_sigma_math_pass": bool(direct["mathematical_contract_pass"]),
         "direct_sigma_structure_match": bool(direct["source_structure_match"]),
         "direct_sigma_parameterization": direct["parameterization"] == "DIRECT_SIGMA_SOURCE_EXACT",
+        "canonical_policy_coordinate_is_applied_p":
+            config["controller"]["action_execution"]["policy_space"] ==
+            "applied_dimensionless_gate_controls_p",
+        "canonical_action_transform_is_identity":
+            config["controller"]["action_execution"]["transform"] == "identity",
+        "canonical_empirical_normalization_disabled":
+            config["controller"]["action_execution"]["empirical_relative_normalization"] is False,
     }
+    ablation_path = root / config["ablations"]["empirical_relative_normalization_bundle"]
+    ablation: dict[str, Any] = {"pass": False, "path": str(ablation_path), "blocking_reasons": []}
+    try:
+        normalization = json.loads(ablation_path.read_text(encoding="utf-8"))
+        boundary = Figure5aEmpiricalBoundary.from_artifact(plant, normalization)
+        ablation_gates = {
+            "bound_to_exact_plant": normalization["plant_hash"] == plant.plant_hash,
+            "bound_to_reduced_reward":
+                normalization["reward_representation_hash"] == reward_representation_hash(plant),
+            "empirical_math_pass": bool(normalization["mathematical_contract_pass"]),
+            "no_percentage_point_conversion": not normalization["percentage_point_conversion_applied"],
+            "no_analytic_degree_shortcut":
+                not normalization["analytic_omega_times_degree_shortcut_used"],
+            "absolute_scale_nonidentifiability_preserved":
+                normalization["absolute_source_scale_identifiable"] is False,
+            "noncanonical_status_explicit":
+                config["ablations"]["empirical_relative_normalization_status"] ==
+                "NONCANONICAL_CONDITIONING_ABLATION",
+            "bounded_ablation_domain_safe": bool(
+                np.all(plant.normalized_control_limits(boundary.native_scale) > 1.0)),
+        }
+        ablation = {"pass": all(ablation_gates.values()), "path": str(ablation_path),
+                    "gates": ablation_gates, "calibration_hash": boundary.calibration_hash,
+                    "blocking_reasons": [name for name, value in ablation_gates.items() if not value]}
+    except (OSError, KeyError, RuntimeError, ValueError) as exc:
+        ablation["blocking_reasons"] = [str(exc)]
     return {"pass": all(gates.values()), "gates": gates, "hashes": dependency_hashes(root, config),
-            "normalization_parameter_count": len(normalization["native_scale"]),
-            "figure5a_coordinate_note": "Figure 5a uses a plant-bound Figure-S3 sweep over the 41 synthetic gate controls; the unpublished grouping is explicit.",
-            "coordinate_registry_alignment": "EXACT_41_CONTROL_PLANT_HASH_BOUND"}
+            "figure5a_coordinate_note": "Canonical Figure 5a applies Gaussian p directly; empirical relative normalization is a separate noncanonical ablation.",
+            "coordinate_registry_alignment": "SOURCE_P_EQUALS_APPLIED_PLANT_P",
+            "empirical_relative_normalization_ablation": ablation}
+
+
+def detector_equivalence_response_audit(
+    plant: Figure5aStimPlant, *, seed: int = 53077, random_policies: int = 5,
+) -> dict[str, Any]:
+    """Verify every declared class has equal exact raw-detector marginals."""
+    if random_policies < 3:
+        raise ValueError("at least three random policies are required")
+    rng = np.random.default_rng(seed)
+    policies = rng.normal(0.0, 0.3, size=(random_policies, plant.control_count))
+    maximum_spread = 0.0
+    failures: list[dict[str, Any]] = []
+    for policy_index, policy in enumerate(policies):
+        marginals = plant.raw_detector_marginals(
+            policy, epoch=0, frequency=1 / 1000,
+            target_controls=np.zeros(plant.control_count))
+        for component, group in enumerate(plant.reward_component_raw_detectors):
+            values = marginals[list(group)]
+            spread = float(np.ptp(values))
+            maximum_spread = max(maximum_spread, spread)
+            if not np.allclose(values, values[0], rtol=1e-12, atol=2e-15):
+                failures.append({"policy": policy_index, "component": component,
+                                 "raw_detectors": list(group), "spread": spread})
+    return {"pass": not failures, "random_policy_count": random_policies,
+            "multi_detector_class_count": sum(
+                len(group) > 1 for group in plant.reward_component_raw_detectors),
+            "maximum_within_class_marginal_spread": maximum_spread,
+            "failures": failures}
 
 
 def physical_preflight(root: Path, config: Mapping[str, Any], *, finite_shot_cycles: int = 900_000) -> dict[str, Any]:
     plant = build_plant(config)
     dependencies = validate_dependencies(root, config)
-    normalization = json.loads((root / config["dependencies"]["normalization_bundle"]).read_text(
-        encoding="utf-8"))
-    boundary = Figure5aEmpiricalBoundary.from_artifact(plant, normalization)
+    equivalence = detector_equivalence_response_audit(plant)
     inventory = plant.inventory
     one_count = sum(item.gate_type == "single_qubit" for item in inventory)
     two_count = sum(item.gate_type == "two_qubit" for item in inventory)
@@ -96,6 +138,9 @@ def physical_preflight(root: Path, config: Mapping[str, Any], *, finite_shot_cyc
     single_full = plant.sample_detector_observation(
         full, epoch=0, frequency=1 / 1000,
         qec_cycles=finite_shot_cycles, seed=single_gate_seed)
+    sigma_envelope = 6.0 * float(config["controller"]["maximum_sigma"])
+    positive_target = plant.optimum(250, 1 / 1000)
+    negative_target = plant.optimum(750, 1 / 1000)
     gates = {
         "exactly_17_one_qubit_controls": one_count == 17,
         "exactly_24_two_qubit_controls": two_count == 24,
@@ -108,24 +153,35 @@ def physical_preflight(root: Path, config: Mapping[str, Any], *, finite_shot_cyc
         "time_translation_reward_reduction": plant.detector_count < plant.raw_detector_count,
         "reduced_reward_partition_is_exact": sum(
             len(group) for group in plant.reward_component_raw_detectors) == plant.raw_detector_count,
+        "detector_class_exact_marginal_equivalence": equivalence["pass"],
+        "detector_class_reduction_nonvacuous": equivalence["multi_detector_class_count"] > 0,
         "physical_probabilities": bool(np.all(plant.probabilities(np.full(41, 2.0), 0, 1 / 1000)
                                                < float(config["plant"]["maximum_probability"]))),
-        "action_transform_matches_frozen_controller_contract":
+        "canonical_action_is_identity":
             config["controller"].get("action_execution", {}).get("transform") ==
-            "plant_derived_per_coordinate_scaled_tanh",
-        "action_transform_independent_of_hidden_optimum":
+            "identity",
+        "canonical_policy_and_plant_coordinates_identical":
+            config["controller"].get("action_execution", {}).get("policy_space") ==
+            config["controller"].get("action_execution", {}).get("plant_space"),
+        "canonical_entropy_is_applied_gaussian_entropy":
+            config["controller"].get("action_execution", {}).get("entropy_space") ==
+            "applied_gaussian",
+        "canonical_mean_is_unbounded":
+            config["controller"].get("action_execution", {}).get("mean_bounds") is None,
+        "empirical_normalization_excluded_from_canonical_path":
+            config["controller"].get("action_execution", {}).get(
+                "empirical_relative_normalization") is False,
+        "identity_action_independent_of_hidden_optimum":
             config["controller"].get("action_execution", {}).get("uses_hidden_optimum") is False,
-        "bounded_action_domain_contains_full_optimum_range":
-            bool(np.all(plant.control_limits > 1.0)),
-        "bounded_action_domain_safe_at_both_drift_extremes": bool(
-            np.all(plant.probabilities(boundary.apply(plant.apply_control_transform(
-                np.full(41, 1e6), native_scale=boundary.native_scale)).native,
-                750, 1 / 1000, target_controls=boundary.target_to_native(
-                    plant.optimum(750, 1 / 1000))) < plant.maximum_probability) and
-            np.all(plant.probabilities(boundary.apply(plant.apply_control_transform(
-                np.full(41, -1e6), native_scale=boundary.native_scale)).native,
-                250, 1 / 1000, target_controls=boundary.target_to_native(
-                    plant.optimum(250, 1 / 1000))) < plant.maximum_probability)),
+        "published_peak_optimum_is_literal_one_vector":
+            np.array_equal(oracle, np.ones(plant.control_count)),
+        "six_sigma_development_envelope_is_physical": bool(
+            np.all(plant.probabilities(
+                positive_target + sigma_envelope, 250, 1 / 1000,
+                target_controls=positive_target) < plant.maximum_probability) and
+            np.all(plant.probabilities(
+                negative_target - sigma_envelope, 750, 1 / 1000,
+                target_controls=negative_target) < plant.maximum_probability)),
         "oracle_better_than_fixed_finite_shot": oracle_observation.raw_total < fixed_observation.raw_total,
         "single_gate_measured_curvature_positive": single_full.raw_total > single_baseline.raw_total,
         "dependencies_valid": dependencies["pass"],
@@ -145,9 +201,9 @@ def physical_preflight(root: Path, config: Mapping[str, Any], *, finite_shot_cyc
                   int(single_full.raw_total - single_baseline.raw_total),
               "dependencies": dependencies, "inventory_hash": canonical_hash(plant.inventory_rows()),
               "mask_hash": canonical_hash(plant.mask.astype(int).tolist()),
-              "action_execution": "plant_derived_per_coordinate_scaled_tanh",
-              "normalized_control_limits":
-                  plant.normalized_control_limits(boundary.native_scale).tolist(),
-              "native_scale": boundary.native_scale.tolist(),
+              "detector_equivalence_response_audit": equivalence,
+              "action_execution": "identity_applied_gaussian",
+              "coordinate_contract": "SOURCE_GAUSSIAN_P_EQUALS_APPLIED_PLANT_P_V1",
+              "six_sigma_policy_envelope": sigma_envelope,
               "blocking_reasons": [name for name, value in gates.items() if not value]}
     return result

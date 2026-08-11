@@ -16,10 +16,7 @@ from .acquisition import run_cell, substitution_identity
 from .contracts import (AcquisitionMode, Figure5aProtocol, atomic_json, build_source_contract,
                         canonical_hash, file_sha256)
 from .entropy_scan import build_conditions, classify_anchor_rows, scan_contract
-from .normalization import (
-    Figure5aEmpiricalBoundary,
-    build_empirical_normalization,
-)
+from .normalization import build_empirical_normalization
 from .validation import build_plant, dependency_hashes, physical_preflight
 
 
@@ -51,14 +48,6 @@ def _optimizer(config: dict[str, Any]) -> OptimizerConfig:
 
 def _controller_hash(config: dict[str, Any]) -> str:
     return canonical_hash(config["controller"])
-
-
-def _normalization_boundary(config: dict[str, Any], plant) -> Figure5aEmpiricalBoundary:
-    path = ROOT / config["dependencies"]["normalization_bundle"]
-    if not path.is_file():
-        raise RuntimeError(
-            "missing plant-bound Figure 5a normalization; run calibrate-normalization first")
-    return Figure5aEmpiricalBoundary.from_artifact(plant, _load(path))
 
 
 def _code_hash() -> str:
@@ -94,7 +83,6 @@ def run_condition(config_path: Path, output: Path, *, mode: AcquisitionMode, sca
                   condition_index: int, resume: bool, allow_reference: bool,
                   max_candidate_boundaries: int | None) -> dict[str, Any]:
     config = _load(config_path); protocol = _protocol(config, mode); plant = build_plant(config)
-    boundary = _normalization_boundary(config, plant)
     conditions = build_conditions(config, mode=mode, scan=scan)
     if not 0 <= condition_index < len(conditions):
         raise ValueError("condition index is outside the frozen scan")
@@ -119,7 +107,7 @@ def run_condition(config_path: Path, output: Path, *, mode: AcquisitionMode, sca
                       clip=float(config["controller"]["ppo_clip"]),
                       baseline_weight=float(config["controller"]["baseline_weight"]),
                       resume=resume, max_candidate_boundaries=max_candidate_boundaries,
-                      boundary=boundary)
+                      source_budget_profile=mode.value)
     result.update({"scan_hash": contract["scan_hash"], "cell_id": cell_id,
                    "condition_index": condition_index, "mode": mode.value, "scan": scan,
                    "validation_watermark": mode != AcquisitionMode.REFERENCE,
@@ -246,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "source-contract": result = build_source_contract(); atomic_json(args.output / "source_contract.json", result)
     elif args.command == "calibrate-normalization":
         plant = build_plant(config); result = build_empirical_normalization(plant)
-        atomic_json(ROOT / config["dependencies"]["normalization_bundle"], result)
+        atomic_json(ROOT / config["ablations"]["empirical_relative_normalization_bundle"], result)
     elif args.command == "preflight": result = physical_preflight(ROOT, config); atomic_json(args.output / "preflight.json", result); plant = build_plant(config); atomic_json(args.output / "parameter_inventory.json", {"plant_hash": plant.plant_hash, "rows": plant.inventory_rows()}); atomic_json(args.output / "detector_mask.json", {"plant_hash": plant.plant_hash, "mask": plant.mask.astype(int).tolist()})
     else:
         mode = AcquisitionMode(args.mode)

@@ -29,6 +29,7 @@ class SourceIdentifiability(StrEnum):
 class AcquisitionMode(StrEnum):
     SMOKE = "smoke"
     VALIDATION = "validation"
+    DYNAMIC_VALIDATION = "dynamic_validation"
     REFERENCE = "reference"
 
 
@@ -120,6 +121,8 @@ def build_source_contract() -> dict[str, Any]:
          "source": "Supplement VI.A"},
         {"field": "gate_error", "value": "epsilon_tilde_i + Omega_i*(p_i-p_opt_i(t))^2", "status": literal,
          "source": "Supplement VI.A"},
+        {"field": "policy_coordinate", "value": "p sampled directly from diagonal Gaussian and applied to plant",
+         "status": literal, "source": "Supplement Eqs. (10)-(12), VI.A, and Algorithm 1"},
         {"field": "budget", "value": "1000 epochs x 50 candidates x 36000 QEC cycles = 1.8e9 candidate cycles",
          "status": literal, "source": "Supplement VI.A"},
         {"field": "policy_streams", "value": "fixed, instantaneous optimum, stochastic candidates, learned mean",

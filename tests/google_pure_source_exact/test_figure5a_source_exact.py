@@ -6,11 +6,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import run_cell, substitution_identity
+from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import (
+    _freeze_batch,
+    run_cell,
+    source_controls_for_epoch,
+    substitution_identity,
+)
 from hdfa_rl_suite.google_pure_source_exact.figure5a.cli import plan
 from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import (
     AcquisitionMode,
     Figure5aProtocol,
+    SOURCE_CANDIDATES_PER_EPOCH,
     SOURCE_CANDIDATE_QEC_CYCLES,
     SOURCE_ENTROPY_ANCHORS,
     ratio_from_raw_counts,
@@ -25,7 +31,10 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.normalization import (
     Figure5aEmpiricalBoundary,
     reward_representation_hash,
 )
-from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_plant
+from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import (
+    build_plant,
+    detector_equivalence_response_audit,
+)
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.gaussian import DirectSigmaGaussianPolicy
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.losses import total_loss_and_gradients
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import OptimizerConfig
@@ -47,7 +56,7 @@ def plant(config) -> Figure5aStimPlant:
 
 @pytest.fixture(scope="module")
 def normalization_artifact(config) -> dict:
-    path = ROOT / config["dependencies"]["normalization_bundle"]
+    path = ROOT / config["ablations"]["empirical_relative_normalization_bundle"]
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -81,19 +90,26 @@ def test_distance3_inventory_is_exact_and_stim_derived(plant) -> None:
 
 
 def test_reward_components_are_time_translation_reduced_and_round_invariant(config, plant) -> None:
-    assert plant.raw_detector_count == 24
-    assert plant.detector_count == 16
+    assert plant.raw_detector_count == 40
+    assert plant.detector_count == 24
     assert plant.detector_count < plant.raw_detector_count
     assert sorted(raw for group in plant.reward_component_raw_detectors for raw in group) == \
         list(range(plant.raw_detector_count))
     longer = json.loads(json.dumps(config))
-    longer["plant"]["circuit_rounds"] = 5
-    five_round_plant = build_plant(longer)
-    assert five_round_plant.raw_detector_count == 40
-    assert five_round_plant.detector_count == plant.detector_count
-    np.testing.assert_array_equal(five_round_plant.mask, plant.mask)
+    longer["plant"]["circuit_rounds"] = 7
+    seven_round_plant = build_plant(longer)
+    assert seven_round_plant.raw_detector_count == 56
+    assert seven_round_plant.detector_count == plant.detector_count
+    np.testing.assert_array_equal(seven_round_plant.mask, plant.mask)
     np.testing.assert_array_equal(
-        five_round_plant.mask.sum(axis=0), plant.mask.sum(axis=0))
+        seven_round_plant.mask.sum(axis=0), plant.mask.sum(axis=0))
+
+
+def test_every_time_equivalence_class_has_equal_exact_marginal_response(plant) -> None:
+    result = detector_equivalence_response_audit(plant, seed=8021, random_policies=7)
+    assert result["multi_detector_class_count"] == 8
+    assert result["pass"], result["failures"]
+    assert result["maximum_within_class_marginal_spread"] < 2e-15
 
 
 def test_empirical_normalization_is_plant_and_reward_bound_without_hidden_point01(
@@ -101,6 +117,8 @@ def test_empirical_normalization_is_plant_and_reward_bound_without_hidden_point0
     artifact = normalization_artifact
     boundary = Figure5aEmpiricalBoundary.from_artifact(plant, artifact)
     assert artifact["plant_hash"] == plant.plant_hash
+    assert artifact["scientific_status"] == "EMPIRICAL_RELATIVE_NORMALIZATION_ABLATION"
+    assert not artifact["canonical_figure5a_execution"]
     assert artifact["reward_representation_hash"] == reward_representation_hash(plant)
     assert artifact["edr_unit"] == "fraction"
     assert artifact["source_literal_target_edr_increase_fraction"] == 1.0
@@ -131,7 +149,7 @@ def test_shared_optimum_quadratic_error_and_physical_probabilities(plant) -> Non
     assert np.all(plant.probabilities(np.full(41, 2.0), 0, 1 / 1000) < plant.maximum_probability)
 
 
-def test_latent_action_transform_is_invertible_hidden_target_free_and_physically_safe(plant) -> None:
+def test_bounded_transform_is_retained_only_as_a_separate_ablation(plant) -> None:
     latent = np.linspace(-2.75, 2.75, 41)
     applied = plant.apply_control_transform(latent)
     np.testing.assert_allclose(plant.latent_controls_for(applied), latent, rtol=1e-12, atol=1e-12)
@@ -144,6 +162,32 @@ def test_latent_action_transform_is_invertible_hidden_target_free_and_physically
                   plant.maximum_probability)
     assert np.all(plant.probabilities(negative_extreme, 250, 1 / 1000) <
                   plant.maximum_probability)
+
+
+def test_canonical_acquisition_uses_literal_source_optimum_and_gaussian_actions(plant) -> None:
+    policy = DirectSigmaGaussianPolicy(np.linspace(-0.2, 0.2, 41), np.full(41, 0.15), seed=8111)
+    batch = _freeze_batch(policy, 6)
+    np.testing.assert_array_equal(batch["applied_actions"], batch["gaussian_actions"])
+    np.testing.assert_array_equal(batch["applied_behavior_mean"], batch["gaussian_behavior_mean"])
+    target, controls = source_controls_for_epoch(
+        plant, epoch=250, frequency=1 / 1000,
+        stochastic=np.asarray(batch["applied_actions"])[0],
+        learned_mean=np.asarray(batch["applied_behavior_mean"]))
+    np.testing.assert_array_equal(target, np.ones(41))
+    np.testing.assert_array_equal(controls["optimal"], target)
+    np.testing.assert_array_equal(controls["stochastic"], np.asarray(batch["gaussian_actions"])[0])
+
+
+def test_configured_omega_is_curvature_in_the_same_applied_policy_coordinates(plant) -> None:
+    rng = np.random.default_rng(8112)
+    target = rng.normal(0.0, 0.2, 41)
+    baseline = plant.probabilities(target, 0, 1 / 1000, target_controls=target)
+    delta = 1e-3
+    for index, item in enumerate(plant.inventory):
+        displaced = target.copy(); displaced[index] += delta
+        measured = (plant.probabilities(
+            displaced, 0, 1 / 1000, target_controls=target)[index] - baseline[index]) / delta**2
+        assert measured == pytest.approx(item.omega_sensitivity, rel=2e-10, abs=1e-12)
 
 
 def test_detector_sampling_is_deterministic_and_local(plant) -> None:
@@ -178,7 +222,7 @@ def test_entropy_is_policy_level_and_not_multiplied_by_detector_degree(plant) ->
 
 
 def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plant) -> None:
-    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 30, 3)
+    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 30, plant.rounds)
     optimizer = OptimizerConfig(0.08, 0.02, 0.08, minimum_sigma=0.002, maximum_sigma=0.8)
     common = dict(protocol=protocol, plant=plant, frequency=0.1, entropy_weight=0.01,
                   seed=99, optimizer_config=optimizer, initial_sigma=0.15,
@@ -194,24 +238,29 @@ def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plan
     assert resumed["epoch_records"] == mono["epoch_records"]
     assert resumed["no_candidates_dropped"]
     assert resumed["candidate_boundaries_completed"] == 6
-    assert resumed["schema_version"] == "figure5a-cell.v3"
+    assert resumed["schema_version"] == "figure5a-cell.v4"
     assert resumed["raw_detector_count"] > resumed["detector_count"]
     assert resumed["reward_representation"] == "time_translation_equivalence_class_mean_edr"
-    assert resumed["action_execution"] == "plant_derived_per_coordinate_scaled_tanh"
-    assert resumed["likelihood_space"] == "latent_gaussian"
-    assert resumed["action_transform_invertible"]
+    assert resumed["action_execution"] == "identity_applied_gaussian"
+    assert resumed["likelihood_space"] == "applied_gaussian"
+    assert resumed["entropy_space"] == "applied_gaussian"
+    assert not resumed["action_transform_applied"]
+    assert not resumed["empirical_relative_normalization_applied"]
+    assert not resumed["mean_bounds_applied"]
     assert not resumed["action_transform_uses_hidden_optimum"]
     assert all(len(record["counts"][stream]) == 3 for record in resumed["epoch_records"]
                for stream in ("fixed", "optimal", "stochastic", "learned_mean"))
-    assert all(record["action_execution"] == "plant_derived_per_coordinate_scaled_tanh"
-               and record["likelihood_space"] == "latent_gaussian"
+    assert all(record["action_execution"] == "identity_applied_gaussian"
+               and record["likelihood_space"] == "applied_gaussian"
+               and record["maximum_abs_gaussian_applied_delta"] == 0.0
+               and record["source_optimum_applied_directly"]
                for record in resumed["epoch_records"])
     assert all(record["optimum"] == plant.optimum(record["epoch"], 0.1)[0]
                for record in resumed["epoch_records"])
 
 
 def test_batched_checkpoint_flush_is_bit_exact(tmp_path, plant) -> None:
-    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 30, 3)
+    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 30, plant.rounds)
     optimizer = OptimizerConfig(0.08, 0.02, 0.08, minimum_sigma=0.002, maximum_sigma=0.8)
     common = dict(protocol=protocol, plant=plant, frequency=0.1, entropy_weight=0.01,
                   seed=101, optimizer_config=optimizer, initial_sigma=0.15,
@@ -231,7 +280,7 @@ def test_batched_checkpoint_flush_is_bit_exact(tmp_path, plant) -> None:
 def test_source_entropy_anchors_and_dense_scan_share_frozen_contract(config, plant) -> None:
     conditions = build_conditions(config, mode=AcquisitionMode.SMOKE, scan="anchors")
     assert tuple(sorted({row["entropy_weight"] for row in conditions})) == SOURCE_ENTROPY_ANCHORS
-    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 30, 3)
+    protocol = Figure5aProtocol(AcquisitionMode.SMOKE, 2, 3, 30, plant.rounds)
     anchors = scan_contract(config, mode=AcquisitionMode.SMOKE, scan="anchors", protocol=protocol,
                             plant_hash=plant.plant_hash, controller_hash="controller")
     dense = scan_contract(config, mode=AcquisitionMode.SMOKE, scan="dense", protocol=protocol,
@@ -239,6 +288,23 @@ def test_source_entropy_anchors_and_dense_scan_share_frozen_contract(config, pla
     assert anchors["plant_hash"] == dense["plant_hash"]
     assert anchors["controller_hash"] == dense["controller_hash"]
     assert anchors["validation_watermark"] and dense["validation_watermark"]
+
+
+def test_dynamic_validation_spans_a_quarter_drift_cycle_without_using_certification_budget(
+        config, plant) -> None:
+    profile = config["profiles"][AcquisitionMode.DYNAMIC_VALIDATION.value]
+    protocol = Figure5aProtocol(
+        AcquisitionMode.DYNAMIC_VALIDATION, profile["epochs"],
+        profile["candidates_per_epoch"], profile["qec_cycles_per_candidate"],
+        plant.rounds)
+    assert protocol.epochs >= 250
+    assert protocol.candidates_per_epoch < SOURCE_CANDIDATES_PER_EPOCH
+    assert protocol.qec_cycles_per_candidate < 36_000
+    assert plant.optimum(protocol.epochs, 1 / 1000)[0] == pytest.approx(1.0)
+    conditions = build_conditions(
+        config, mode=AcquisitionMode.DYNAMIC_VALIDATION, scan="anchors")
+    assert {row["entropy_weight"] for row in conditions} == set(SOURCE_ENTROPY_ANCHORS)
+    assert len({row["seed"] for row in conditions}) == 3
 
 
 def test_anchor_classification_is_quantitative_and_seed_stable() -> None:
