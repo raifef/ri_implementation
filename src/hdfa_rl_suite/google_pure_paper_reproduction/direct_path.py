@@ -48,8 +48,9 @@ def protocol_identity_reasons(protocol: Mapping[str, Any]) -> list[str]:
         if protocol.get("graph_hash")!=expected_graph: reasons.append("amended family graph contract mismatch")
     if manifest is not None and not manifest.get("gates",{}).get("five_policy_decomposition_retained"):
         reasons.append("tiny integration did not retain the five-policy decomposition")
-    if manifest is not None and not manifest.get("gates",{}).get("v15_source_boundary_executed"):
-        reasons.append("tiny integration did not execute the V15 source boundary")
+    if manifest is not None and not any(manifest.get("gates",{}).get(name) for name in (
+            "figure5a_empirical_boundary_executed", "v15_source_boundary_executed")):
+        reasons.append("tiny integration did not execute a validated single-use plant boundary")
     return reasons
 
 def require_amended_acquisition(protocol: Mapping[str, Any]) -> None:

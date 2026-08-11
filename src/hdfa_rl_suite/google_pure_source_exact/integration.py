@@ -9,7 +9,7 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_pla
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.contracts import PositivityGuard
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import OptimizerConfig
 from .identity import build_direct_sigma_identity, require_direct_sigma_identity
-from .source_normalization import SourceNormalizationBoundary
+from .figure5a.normalization import empirical_boundary_for_plant
 
 ROOT=Path(__file__).resolve().parents[3]
 DEFAULT_OUTPUT=ROOT/"artifacts/google_pure_source_exact/direct_sigma_integration"
@@ -34,21 +34,21 @@ def run_tiny_integration(output: Path=DEFAULT_OUTPUT) -> dict:
         dependency_hashes=dependency_hashes(ROOT,config),controller_hash=identity["controller_hash"],
         clip=float(controller["ppo_clip"]),baseline_weight=float(controller["baseline_weight"]),resume=checkpoint.exists())
     state=json.loads(checkpoint.read_text(encoding="utf-8")); mean=np.asarray(state["policy"]["mean"]); sigma=np.asarray(state["policy"]["sigma"])
-    degree=np.sum(plant.mask,axis=0).astype(float)
-    curvature=np.asarray([item.omega_sensitivity for item in plant.inventory])*degree
-    boundary=SourceNormalizationBoundary.from_training_objective(
-        "FIGURE5A_REAL_TIME_STEERING",curvature,control_ids=plant.parameter_ids)
+    boundary=empirical_boundary_for_plant(plant)
     epoch=protocol.epochs-1; optimum_normalized=plant.optimum(epoch,float(config["anchor"]["frequency"])); rng=np.random.default_rng(53199)
     optimum=boundary.target_to_native(optimum_normalized)
-    oracle_latent=plant.latent_controls_for(optimum_normalized)
-    to_native=lambda latent:boundary.apply(plant.apply_control_transform(latent)).native
+    oracle_latent=plant.latent_controls_for(
+        optimum_normalized,native_scale=boundary.native_scale)
+    to_native=lambda latent:boundary.apply(plant.apply_control_transform(
+        latent,native_scale=boundary.native_scale)).native
     policies={"fixed":boundary.target_to_native(np.zeros(41)),"oracle":optimum,
               "oracle_with_policy_sigma":to_native(oracle_latent+sigma*rng.normal(size=41)),
               "learned_mean":to_native(mean),
               "sampled_candidates":to_native(mean+sigma*rng.normal(size=41))}
-    policy_counts={name:int(plant.sample_detector_counts(action,epoch=epoch,frequency=float(config["anchor"]["frequency"]),
+    policy_counts={name:plant.sample_detector_observation(
+        action,epoch=epoch,frequency=float(config["anchor"]["frequency"]),
         qec_cycles=3000,seed=plant.stream_seed(53199,name,epoch,0),
-        target_controls=optimum).sum()) for name,action in policies.items()}
+        target_controls=optimum).raw_total for name,action in policies.items()}
     records=cell["epoch_records"]
     gates={
         "direct_sigma_controller_hash_loaded":cell["controller_hash"]==identity["controller_hash"],
@@ -63,8 +63,9 @@ def run_tiny_integration(output: Path=DEFAULT_OUTPUT) -> dict:
         "nonzero_detector_events_observed":sum(cell["stream_totals"].values())>0,
         "five_policy_decomposition_retained":set(policy_counts)==set(policies) and all(value>=0 for value in policy_counts.values()),
         "bounded_action_transform_executed":all(row["action_execution"]=="plant_derived_per_coordinate_scaled_tanh" for row in records),
-        "v15_source_boundary_executed":all(row["boundary_apply_count"]==1 and
-            row["plant_boundary_execution"]=="v15_source_normalized_to_native_once" for row in records),
+        "figure5a_empirical_boundary_executed":all(row["boundary_apply_count"]==1 and
+            row["plant_boundary_execution"]=="figure5a_empirical_relative_equalization_once"
+            for row in records),
         "latent_gaussian_likelihood_retained":all(row["likelihood_space"]=="latent_gaussian" for row in records),
         "status_inherits_provenance_without_promotion":True,
     }
@@ -74,7 +75,7 @@ def run_tiny_integration(output: Path=DEFAULT_OUTPUT) -> dict:
         "plant_mode":"FIGURE5A_41_PARAMETER_STIM","plant_hash":plant.plant_hash,
         "graph_hash":canonical_hash(plant.mask.astype(int).tolist()),"control_count":plant.control_count,
         "detector_count":plant.detector_count,"normalization_hashes":dependencies["hashes"],
-        "v15_boundary":boundary.provenance_fields(),
+        "figure5a_empirical_boundary":boundary.provenance_fields(),
         "policy_decomposition_counts":policy_counts,"training_qec_cycles":cell["candidate_qec_cycles"],
         "four_source_stream_qec_cycles":cell["four_stream_qec_cycles"],"complete":cell["complete"],
         "scientifically_valid":False,"final_evidence":False,"evidence_layer":"TINY_INTEGRATION_PATH_PROOF_ONLY",

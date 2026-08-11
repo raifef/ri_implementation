@@ -20,9 +20,10 @@ from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer im
 
 from .contracts import Figure5aProtocol, atomic_json, canonical_hash, ratio_from_raw_counts
 from .plant import Figure5aStimPlant
-from hdfa_rl_suite.google_pure_source_exact.source_normalization import (
-    SourceNormalizationBoundary,
-    require_v15_boundary_provenance,
+from .normalization import (
+    Figure5aEmpiricalBoundary,
+    empirical_boundary_for_plant,
+    require_figure5a_boundary_provenance,
 )
 
 
@@ -33,13 +34,13 @@ def _new_state(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequenc
                entropy_weight: float, seed: int, policy: DirectSigmaGaussianPolicy,
                optimizer: DirectSigmaOptimizer, baseline: np.ndarray,
                dependency_hashes: Mapping[str, str], controller_hash: str,
-               boundary: SourceNormalizationBoundary) -> dict[str, Any]:
+               boundary: Figure5aEmpiricalBoundary) -> dict[str, Any]:
     return {
-        "schema_version": "figure5a-cell-checkpoint.v2", "protocol": asdict(protocol),
+        "schema_version": "figure5a-cell-checkpoint.v3", "protocol": asdict(protocol),
         "protocol_hash": protocol.protocol_hash, "plant_hash": plant.plant_hash,
         "frequency": float(frequency), "entropy_weight": float(entropy_weight), "seed": int(seed),
         "dependency_hashes": dict(dependency_hashes), "controller_hash": controller_hash,
-        "v15_boundary": boundary.provenance_fields(),
+        "figure5a_empirical_boundary": boundary.provenance_fields(),
         "epoch": 0, "active_batch": None,
         "policy": policy.state_dict(optimizer_state=optimizer.state_dict(), baseline=baseline),
         "epoch_shards": [], "candidate_boundaries_completed": 0,
@@ -54,10 +55,12 @@ def _load_runtime(state: dict[str, Any]) -> tuple[DirectSigmaGaussianPolicy, Dir
 
 
 def _freeze_batch(policy: DirectSigmaGaussianPolicy, plant: Figure5aStimPlant,
-                  boundary: SourceNormalizationBoundary, count: int) -> dict[str, Any]:
+                  boundary: Figure5aEmpiricalBoundary, count: int) -> dict[str, Any]:
     batch = policy.sample(count)
-    normalized_actions = plant.apply_control_transform(batch.actions)
-    normalized_mean = plant.apply_control_transform(batch.behavior.mean)
+    normalized_actions = plant.apply_control_transform(
+        batch.actions, native_scale=boundary.native_scale)
+    normalized_mean = plant.apply_control_transform(
+        batch.behavior.mean, native_scale=boundary.native_scale)
     applied_actions = boundary.apply(normalized_actions).native
     applied_mean = boundary.apply(normalized_mean).native
     return {"latent_actions": batch.actions.tolist(), "normalized_actions": normalized_actions.tolist(),
@@ -85,7 +88,7 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
              resume: bool = False, max_candidate_boundaries: int | None = None,
              boundary_callback: Callable[[dict[str, Any]], None] | None = None,
              checkpoint_every_candidates: int = 1,
-             boundary: SourceNormalizationBoundary | None = None,
+             boundary: Figure5aEmpiricalBoundary | None = None,
              fresh_acquisition_required: bool = False,
              source_budget_profile: str = "UNSPECIFIED_DEVELOPMENT") -> dict[str, Any]:
     """Execute or resume a cell; checkpoint atomically after every candidate boundary."""
@@ -93,10 +96,8 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
         raise ValueError("frequency, entropy weight, and initial sigma must be positive")
     if checkpoint_every_candidates < 1:
         raise ValueError("checkpoint_every_candidates must be at least one")
-    degree = np.sum(plant.mask, axis=0).astype(float)
-    curvature = np.asarray([item.omega_sensitivity for item in plant.inventory]) * degree
-    boundary = boundary or SourceNormalizationBoundary.from_training_objective(
-        "FIGURE5A_REAL_TIME_STEERING", curvature, control_ids=plant.parameter_ids)
+    boundary = boundary or empirical_boundary_for_plant(plant)
+    normalized_control_limits = plant.normalized_control_limits(boundary.native_scale)
     checkpoint_preexisted = checkpoint_path.exists()
     if checkpoint_preexisted and fresh_acquisition_required:
         raise RuntimeError("fresh V15 acquisition forbids reuse of a lower-level checkpoint")
@@ -106,7 +107,7 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
         state = __import__("json").loads(checkpoint_path.read_text(encoding="utf-8"))
         identity = (state["protocol_hash"], state["plant_hash"], state["frequency"],
                     state["entropy_weight"], state["seed"], state["dependency_hashes"],
-                    state.get("controller_hash"), state.get("v15_boundary"))
+                    state.get("controller_hash"), state.get("figure5a_empirical_boundary"))
         expected = (protocol.protocol_hash, plant.plant_hash, float(frequency), float(entropy_weight),
                     int(seed), dict(dependency_hashes), controller_hash,
                     boundary.provenance_fields())
@@ -141,12 +142,13 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             }
             detector_counts: dict[str, np.ndarray] = {}
             for stream in STREAMS:
-                detector_counts[stream] = plant.sample_detector_counts(
+                observation = plant.sample_detector_observation(
                     controls[stream], epoch=epoch, frequency=frequency,
                     qec_cycles=protocol.qec_cycles_per_candidate,
                     seed=plant.stream_seed(seed, stream, epoch, candidate),
                     target_controls=optimum)
-                active["counts"][stream].append(int(detector_counts[stream].sum()))
+                detector_counts[stream] = observation.reward_component_counts
+                active["counts"][stream].append(observation.raw_total)
             active["stochastic_detector_counts"].append(detector_counts["stochastic"].tolist())
             active["next_candidate"] = candidate + 1
             state["candidate_boundaries_completed"] += 1
@@ -188,17 +190,20 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             "normalized_behavior_mean": active["normalized_behavior_mean"],
             "latent_behavior_mean": active["latent_behavior_mean"],
             "behavior_sigma": active["behavior_sigma"],
-            "post_update_mean": boundary.apply(plant.apply_control_transform(policy.mean)).native.tolist(),
-            "post_update_normalized_mean": plant.apply_control_transform(policy.mean).tolist(),
+            "post_update_mean": boundary.apply(plant.apply_control_transform(
+                policy.mean, native_scale=boundary.native_scale)).native.tolist(),
+            "post_update_normalized_mean": plant.apply_control_transform(
+                policy.mean, native_scale=boundary.native_scale).tolist(),
             "post_update_latent_mean": policy.mean.tolist(),
             "post_update_sigma": policy.sigma.tolist(),
             "action_execution": "plant_derived_per_coordinate_scaled_tanh",
-            "plant_boundary_execution": "v15_source_normalized_to_native_once",
+            "plant_boundary_execution": "figure5a_empirical_relative_equalization_once",
             "likelihood_space": "latent_gaussian",
             "action_transform_uses_hidden_optimum": False,
-            "control_limits": plant.control_limits.tolist(),
+            "native_control_limits": (normalized_control_limits * boundary.native_scale).tolist(),
+            "normalized_control_limits": normalized_control_limits.tolist(),
             "maximum_abs_latent_applied_delta": float(np.max(np.abs(
-                np.asarray(active["latent_actions"]) - np.asarray(active["applied_actions"])))),
+                np.asarray(active["latent_actions"]) - np.asarray(active["normalized_actions"])))),
             "policy_entropy": entropy(np.asarray(active["behavior_sigma"])),
             "counts": {stream: list(map(int, active["counts"][stream])) for stream in STREAMS},
             "stream_totals": {stream: int(sum(active["counts"][stream])) for stream in STREAMS},
@@ -239,19 +244,22 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             raise RuntimeError("reference cell has a zero finite-shot fixed/optimal denominator")
         ratios = learned_ratios = {"source_ratio": None, "positive_cost_ratio": None}
     artifact = {
-        "schema_version": "figure5a-cell.v2", "complete": True,
+        "schema_version": "figure5a-cell.v3", "complete": True,
         "protocol": state["protocol"], "protocol_hash": state["protocol_hash"],
         "plant_hash": plant.plant_hash, "dependency_hashes": dict(dependency_hashes),
         "controller_hash": controller_hash,
         "frequency": float(frequency), "entropy_weight": float(entropy_weight), "seed": int(seed),
         "parameterization": "DIRECT_SIGMA_SOURCE_EXACT", "control_count": 41,
         "action_execution": "plant_derived_per_coordinate_scaled_tanh",
-        "plant_boundary_execution": "v15_source_normalized_to_native_once",
+        "plant_boundary_execution": "figure5a_empirical_relative_equalization_once",
         "likelihood_space": "latent_gaussian",
         "action_transform_invertible": True,
         "action_transform_uses_hidden_optimum": False,
-        "control_limits": plant.control_limits.tolist(),
-        "detector_count": plant.detector_count, "stream_totals": totals,
+        "native_control_limits": (normalized_control_limits * boundary.native_scale).tolist(),
+        "normalized_control_limits": normalized_control_limits.tolist(),
+        "detector_count": plant.detector_count, "raw_detector_count": plant.raw_detector_count,
+        "reward_representation": "time_translation_equivalence_class_mean_edr",
+        "stream_totals": totals,
         "stochastic_ratio": ratios, "learned_mean_ratio": learned_ratios,
         "finite_shot_denominator_nonzero": finite_shot_denominator_nonzero,
         "epoch_records": epoch_records,
@@ -268,7 +276,7 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
         **boundary.provenance_fields(),
         "artifact_hash": canonical_hash({key: value for key, value in state.items() if key != "policy"}),
     }
-    require_v15_boundary_provenance(artifact)
+    require_figure5a_boundary_provenance(artifact)
     return artifact
 
 

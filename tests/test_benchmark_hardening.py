@@ -15,7 +15,7 @@ class BenchmarkLaunchHardeningTests(unittest.TestCase):
     def config(**changes):
         values = dict(
             qubit_count=3, intervals=2, cycles_per_interval=32, seeds=(1, 2),
-            candidate_cycles=2048, logical_shots_per_interval=16,
+            candidate_cycles=36000, logical_shots_per_interval=16,
             cycle_period_s=1e-5,
             bootstrap_characterization_shots=64, bootstrap_validation_cycles=64,
             bootstrap_target_stddev=.07, bootstrap_qec_rate_limit=.10,

@@ -58,8 +58,9 @@ class FullRLValidationTests(unittest.TestCase):
         budget = run_sample_budget_validation()
         self.assertTrue(controller.passed)
         self.assertTrue(budget.passed)
-        self.assertEqual(budget.metadata["selected_validated_reduced_budget"], 2048)
-        self.assertEqual(budget.metadata["paper_scale_cycles_per_candidate"], 100000)
+        self.assertEqual(budget.metadata["selected_validated_budget"], 36000)
+        self.assertIsNone(budget.metadata["selected_validated_reduced_budget"])
+        self.assertEqual(budget.metadata["paper_scale_cycles_per_candidate"], 36000)
 
     def test_controller_faults_fail_closed(self):
         cases = {

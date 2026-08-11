@@ -109,7 +109,7 @@ class AuthoritativeBenchmarkTests(unittest.TestCase):
     def run_primary(cls, seeds=(1, 2)):
         config = BenchmarkConfig(
             qubit_count=3, intervals=4, cycles_per_interval=128, seeds=seeds,
-            candidate_cycles=2048, logical_shots_per_interval=32,
+            candidate_cycles=36000, logical_shots_per_interval=32,
             cycle_period_s=1e-5,
             bootstrap_characterization_shots=64, bootstrap_validation_cycles=64,
             bootstrap_target_stddev=.07, bootstrap_qec_rate_limit=.10,
@@ -200,7 +200,7 @@ class AuthoritativeBenchmarkTests(unittest.TestCase):
     def test_declared_primary_censoring_is_an_authoritative_failed_estimand(self):
         config = BenchmarkConfig(
             qubit_count=3, intervals=4, censoring_limit_intervals=2,
-            cycles_per_interval=64, seeds=(1, 2), candidate_cycles=2048,
+            cycles_per_interval=64, seeds=(1, 2), candidate_cycles=36000,
             logical_shots_per_interval=16,
             cycle_period_s=1e-5,
             bootstrap_characterization_shots=64, bootstrap_validation_cycles=64,
@@ -220,7 +220,7 @@ class AuthoritativeBenchmarkTests(unittest.TestCase):
     def test_lifecycle_violation_is_valid_negative_evidence_not_design_invalidity(self):
         config = BenchmarkConfig(
             qubit_count=3, intervals=4, cycles_per_interval=128, seeds=(1, 2),
-            candidate_cycles=2048, logical_shots_per_interval=32,
+            candidate_cycles=36000, logical_shots_per_interval=32,
             cycle_period_s=1e-5,
             bootstrap_characterization_shots=64, bootstrap_validation_cycles=64,
             bootstrap_target_stddev=.07, bootstrap_qec_rate_limit=.10,

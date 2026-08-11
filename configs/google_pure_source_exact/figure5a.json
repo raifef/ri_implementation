@@ -2,7 +2,7 @@
   "schema_version": "google-pure-source-exact-figure5a-config.v1",
   "paper_doi": "10.1038/s41586-026-10759-2",
   "dependencies": {
-    "normalization_bundle": "artifacts/google_pure_source_exact/control_normalization/calibration_bundle.json",
+    "normalization_bundle": "configs/google_pure_source_exact/figure5a_normalization.json",
     "direct_sigma_status": "artifacts/google_pure_source_exact/policy_parameterization/final_status.json"
   },
   "plant": {

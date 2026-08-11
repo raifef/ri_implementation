@@ -12,7 +12,11 @@ from .common import ValidationCheck, ValidationReport, all_passed, finalize_repo
 from .gradient_diagnostics import cosine_similarity
 
 
-PAPER_SCALE_CYCLES_PER_CANDIDATE = 100_000
+# The public Figure-5a protocol uses 3.6e4 QEC cycles per candidate.  This is
+# the only published per-candidate reference available to this clean-room
+# validator; 100,000 was a repository-local convention and must not be called
+# paper scale.
+PAPER_SCALE_CYCLES_PER_CANDIDATE = 36_000
 
 
 @dataclass(frozen=True)
@@ -27,7 +31,10 @@ class SampleBudgetConfig:
     minimum_ranking_accuracy: float = .70
     minimum_gradient_cosine: float = .70
     maximum_harmful_update_probability: float = .15
-    minimum_convergence_probability: float = .75
+    # 0.75 made the 2,048-cycle classification hinge on one success out of 32
+    # and even change across NumPy binomial implementations.  The stricter
+    # threshold rejects that numerically brittle boundary case.
+    minimum_convergence_probability: float = .80
 
 
 def _detector_probabilities(action: np.ndarray, target: np.ndarray) -> np.ndarray:
@@ -132,9 +139,13 @@ def run_sample_budget_validation(config: SampleBudgetConfig = SampleBudgetConfig
         and float(row["convergence_probability"]) >= config.minimum_convergence_probability
     )]
     selected = min((int(row["cycles_per_candidate"]) for row in passing), default=None)
+    selected_reduced = min((int(row["cycles_per_candidate"]) for row in passing
+                            if int(row["cycles_per_candidate"]) <
+                            PAPER_SCALE_CYCLES_PER_CANDIDATE), default=None)
     checks = [ValidationCheck(
         "candidate_budget_adequacy", selected is not None and selected > min(config.budgets),
-        {"selected_validated_reduced_budget": selected,
+        {"selected_validated_budget": selected,
+         "selected_validated_reduced_budget": selected_reduced,
          "paper_scale_budget": PAPER_SCALE_CYCLES_PER_CANDIDATE,
          "thresholds": {
              "ranking": config.minimum_ranking_accuracy,
@@ -144,20 +155,21 @@ def run_sample_budget_validation(config: SampleBudgetConfig = SampleBudgetConfig
              "convergence_loss_fraction": config.convergence_loss_fraction,
          }},
         "at least one non-smoke budget passes all thresholds and the smallest tested budget is not accepted",
-        "Reduced candidate acquisition is labelled faithful only after gradient and convergence adequacy is demonstrated.",
+        "A candidate acquisition budget is accepted only after gradient and convergence adequacy is demonstrated.",
     )]
     paper_row = next((row for row in rows
                       if int(row["cycles_per_candidate"]) == PAPER_SCALE_CYCLES_PER_CANDIDATE), None)
     checks.append(ValidationCheck(
         "paper_scale_reference_available", paper_row is not None,
-        paper_row or {}, "100,000-cycle paper-scale reference included",
+        paper_row or {}, "36,000-cycle public Figure-5a reference included",
         "The short validation does not silently substitute a smoke budget for the published-scale protocol.",
     ))
     return finalize_report(ValidationReport(
         "candidate-budget-validation.v1", "sample_budget_validation",
         all_passed(checks), tuple(checks), tuple(rows), {
             "config": asdict(config),
-            "selected_validated_reduced_budget": selected,
+            "selected_validated_budget": selected,
+            "selected_validated_reduced_budget": selected_reduced,
             "paper_scale_cycles_per_candidate": PAPER_SCALE_CYCLES_PER_CANDIDATE,
             "injected_faults": sorted(faults),
             "evidence_layer": "analytic detector model with finite-shot Monte Carlo",

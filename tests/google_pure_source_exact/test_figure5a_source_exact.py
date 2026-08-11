@@ -21,6 +21,10 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.entropy_scan import (
     scan_contract,
 )
 from hdfa_rl_suite.google_pure_source_exact.figure5a.plant import Figure5aStimPlant
+from hdfa_rl_suite.google_pure_source_exact.figure5a.normalization import (
+    Figure5aEmpiricalBoundary,
+    reward_representation_hash,
+)
 from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_plant
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.gaussian import DirectSigmaGaussianPolicy
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.losses import total_loss_and_gradients
@@ -39,6 +43,12 @@ def config() -> dict:
 @pytest.fixture(scope="module")
 def plant(config) -> Figure5aStimPlant:
     return build_plant(config)
+
+
+@pytest.fixture(scope="module")
+def normalization_artifact(config) -> dict:
+    path = ROOT / config["dependencies"]["normalization_bundle"]
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def test_exact_source_budget_arithmetic_and_reference_gate() -> None:
@@ -68,6 +78,43 @@ def test_distance3_inventory_is_exact_and_stim_derived(plant) -> None:
     assert plant.mask.any(axis=0).all() and plant.mask.any(axis=1).all()
     assert 0 < plant.mask.mean() < 1
     assert all(row.circuit_locations and row.detectors_influenced for row in plant.inventory)
+
+
+def test_reward_components_are_time_translation_reduced_and_round_invariant(config, plant) -> None:
+    assert plant.raw_detector_count == 24
+    assert plant.detector_count == 16
+    assert plant.detector_count < plant.raw_detector_count
+    assert sorted(raw for group in plant.reward_component_raw_detectors for raw in group) == \
+        list(range(plant.raw_detector_count))
+    longer = json.loads(json.dumps(config))
+    longer["plant"]["circuit_rounds"] = 5
+    five_round_plant = build_plant(longer)
+    assert five_round_plant.raw_detector_count == 40
+    assert five_round_plant.detector_count == plant.detector_count
+    np.testing.assert_array_equal(five_round_plant.mask, plant.mask)
+    np.testing.assert_array_equal(
+        five_round_plant.mask.sum(axis=0), plant.mask.sum(axis=0))
+
+
+def test_empirical_normalization_is_plant_and_reward_bound_without_hidden_point01(
+        plant, normalization_artifact) -> None:
+    artifact = normalization_artifact
+    boundary = Figure5aEmpiricalBoundary.from_artifact(plant, artifact)
+    assert artifact["plant_hash"] == plant.plant_hash
+    assert artifact["reward_representation_hash"] == reward_representation_hash(plant)
+    assert artifact["edr_unit"] == "fraction"
+    assert artifact["source_literal_target_edr_increase_fraction"] == 1.0
+    assert not artifact["percentage_point_conversion_applied"]
+    assert not artifact["analytic_omega_times_degree_shortcut_used"]
+    assert not artifact["absolute_source_scale_identifiable"]
+    assert not artifact["source_literal_scale_safe_for_published_unit_amplitude_drift"]
+    assert np.exp(np.mean(np.log(boundary.native_scale))) == pytest.approx(1.0)
+    conditioned = []
+    for group in artifact["control_groups"]:
+        index = group["control_indices"][0]
+        conditioned.append(group["quadratic_coefficient_per_native_squared"] *
+                           boundary.native_scale[index] ** 2)
+    assert conditioned[0] == pytest.approx(conditioned[1], rel=1e-12)
 
 
 def test_shared_optimum_quadratic_error_and_physical_probabilities(plant) -> None:
@@ -107,6 +154,12 @@ def test_detector_sampling_is_deterministic_and_local(plant) -> None:
                                           seed=plant.stream_seed(7, "test", 0, 0))
     assert np.array_equal(first, second)
     assert first.shape == (plant.detector_count,)
+    observation = plant.sample_detector_observation(
+        controls, epoch=0, frequency=1 / 1000, qec_cycles=300,
+        seed=plant.stream_seed(7, "test", 0, 0))
+    assert observation.raw_counts.shape == (plant.raw_detector_count,)
+    assert observation.reward_component_counts.shape == (plant.detector_count,)
+    assert observation.raw_total == int(observation.raw_counts.sum())
 
 
 def test_entropy_is_policy_level_and_not_multiplied_by_detector_degree(plant) -> None:
@@ -141,7 +194,9 @@ def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plan
     assert resumed["epoch_records"] == mono["epoch_records"]
     assert resumed["no_candidates_dropped"]
     assert resumed["candidate_boundaries_completed"] == 6
-    assert resumed["schema_version"] == "figure5a-cell.v2"
+    assert resumed["schema_version"] == "figure5a-cell.v3"
+    assert resumed["raw_detector_count"] > resumed["detector_count"]
+    assert resumed["reward_representation"] == "time_translation_equivalence_class_mean_edr"
     assert resumed["action_execution"] == "plant_derived_per_coordinate_scaled_tanh"
     assert resumed["likelihood_space"] == "latent_gaussian"
     assert resumed["action_transform_invertible"]

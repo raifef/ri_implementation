@@ -30,7 +30,7 @@ def main() -> int:
     parser.add_argument("--intervals", type=int, default=8)
     parser.add_argument("--cycles", type=int, default=64)
     parser.add_argument("--candidate-cycles", type=int, default=2048,
-                        help="cycles per candidate; 2048 is a Track-A reduced-budget candidate, 100000 is the high-shot reference")
+                        help="cycles per candidate; authoritative runs require the current validated floor (36,000 in the default preflight)")
     parser.add_argument("--logical-shots", type=int, default=256)
     parser.add_argument("--censoring-intervals", type=int)
     parser.add_argument("--bootstrap-shots", type=int, default=96)
