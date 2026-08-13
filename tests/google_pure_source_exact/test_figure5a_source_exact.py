@@ -15,7 +15,7 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import (
 from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import (
     Figure5aBoundedActionAblation,
 )
-from hdfa_rl_suite.google_pure_source_exact.figure5a.cli import plan
+from hdfa_rl_suite.google_pure_source_exact.figure5a.cli import _terminal_summary, plan
 from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import (
     AcquisitionMode,
     Figure5aProtocol,
@@ -499,6 +499,31 @@ def test_optimizer_reports_both_sigma_bounds_and_unclipped_extrema() -> None:
     assert update["unclipped_sigma_min"] == pytest.approx(-0.09)
     assert update["fraction_at_sigma_max"] == 0.5
     assert update["fraction_at_sigma_min"] == 0.5
+
+
+def test_cli_run_output_is_bounded_but_lossless_artifact_payload_is_unchanged(tmp_path) -> None:
+    matrix = [[float(row * 24 + column) for column in range(24)] for row in range(50)]
+    result = {
+        "schema_version": "figure5a-cell.v6", "complete": True,
+        "mode": "validation", "scan": "anchors", "condition_index": 2,
+        "cell_id": "cell-2", "candidate_boundaries_completed": 1000,
+        "candidate_qec_cycles": 1_800_000_000,
+        "four_stream_qec_cycles": 7_200_000_000,
+        "stochastic_ratio": {"source_ratio": 0.75},
+        "learned_mean_ratio": {"source_ratio": 0.8},
+        "epoch_records": [{
+            "epoch": 999, "stochastic_detector_counts": matrix,
+            "fraction_at_sigma_min": 0.0, "fraction_at_sigma_max": 0.0,
+            "unclipped_sigma_min": 0.1, "unclipped_sigma_max": 0.3,
+        }],
+    }
+    summary = _terminal_summary("run", result, tmp_path)
+    encoded = json.dumps(summary)
+    assert "stochastic_detector_counts" not in encoded
+    assert len(encoded) < 2_000
+    assert result["epoch_records"][0]["stochastic_detector_counts"] == matrix
+    assert summary["artifact_path"].endswith("cell-2.json")
+    assert summary["latest_sigma_telemetry"]["unclipped_sigma_max"] == 0.3
 
 
 def test_reference_planner_reports_exact_cost(config, tmp_path) -> None:

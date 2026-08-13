@@ -344,6 +344,100 @@ def write_report(payload: dict[str, Any], output: Path) -> None:
     (output / "FINAL_REPORT.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+def _terminal_summary(
+    command: str, result: dict[str, Any], output: Path,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return bounded CLI output while lossless data remain in JSON artifacts."""
+    summary: dict[str, Any] = {"command": command}
+    for key in (
+        "schema_version", "complete", "pass", "mode", "scan", "condition_index",
+        "cell_id", "iteration_id", "scientific_status", "blocking_reasons",
+    ):
+        if key in result:
+            summary[key] = result[key]
+
+    if command == "run":
+        complete = bool(result.get("complete"))
+        summary.update({
+            "artifact_path": str((
+                output / "shards" / str(result.get("mode")) / str(result.get("scan")) /
+                f"{result.get('cell_id')}.json"
+            ).resolve()) if complete else None,
+            "checkpoint_path": result.get("checkpoint_path"),
+            "candidate_boundaries_completed": result.get("candidate_boundaries_completed"),
+            "candidate_qec_cycles": result.get("candidate_qec_cycles"),
+            "four_stream_qec_cycles": result.get("four_stream_qec_cycles"),
+            "stochastic_ratio": result.get("stochastic_ratio"),
+            "learned_mean_ratio": result.get("learned_mean_ratio"),
+            "wall_seconds_this_call": result.get("wall_seconds_this_call"),
+        })
+        records = result.get("epoch_records", [])
+        if records:
+            latest = records[-1]
+            summary["latest_epoch"] = latest.get("epoch")
+            summary["latest_sigma_telemetry"] = {
+                key: latest.get(key) for key in (
+                    "fraction_at_sigma_min", "fraction_at_sigma_max",
+                    "unclipped_sigma_min", "unclipped_sigma_max",
+                )
+            }
+    elif command == "merge":
+        anchor = result.get("anchor_classification") or {}
+        dense = result.get("dense_threshold_analysis") or {}
+        summary.update({
+            "artifact_path": str((
+                output / "iterations" / str(result.get("iteration_id")) / "merged.json"
+            ).resolve()),
+            "mathematical_contract_pass": result.get("mathematical_contract_pass"),
+            "protocol_contract_pass": result.get("protocol_contract_pass"),
+            "quantitative_match": result.get("quantitative_match"),
+            "anchor_classification_pass": anchor.get("anchor_classification_pass"),
+            "dense_acceptance_pass": dense.get("dense_acceptance_pass"),
+            "estimated_steerability_threshold_frequency_per_epoch": dense.get(
+                "estimated_steerability_threshold_frequency_per_epoch"),
+        })
+    elif command == "plan":
+        summary.update({
+            "artifact_path": str((
+                output / "plans" / f"{result.get('mode')}_{result.get('scan')}.json"
+            ).resolve()),
+            "condition_count": result.get("condition_count"),
+            "candidate_training_qec_cycles": result.get("candidate_training_qec_cycles"),
+            "four_stream_total_qec_cycles": result.get("four_stream_total_qec_cycles"),
+            "Stim_shots": result.get("Stim_shots"),
+            "estimated_sampling_seconds_lower_bound": result.get(
+                "estimated_sampling_seconds_lower_bound"),
+            "estimated_peak_memory_bytes": result.get("estimated_peak_memory_bytes"),
+        })
+    else:
+        artifact_paths = {
+            "source-contract": output / "source_contract.json",
+            "preflight": output / "preflight.json",
+            "plan-gradient-stability": output / "plans" / "gradient_stability.json",
+            "summarize-gradient-stability": output / "gradient_stability" / "summary.json",
+            "plan-round-invariance": output / "plans" / "round_invariance.json",
+            "run-round-invariance": output / "round_invariance.json",
+        }
+        if command == "calibrate-normalization" and config is not None:
+            artifact_paths[command] = ROOT / config["ablations"][
+                "empirical_relative_normalization_bundle"]
+        if command == "run-gradient-stability":
+            summary["checkpoint_path"] = result.get("checkpoint_path")
+            summary["condition"] = result.get("condition")
+            summary["result_summary"] = result.get("summary")
+        elif command in artifact_paths:
+            summary["artifact_path"] = str(artifact_paths[command].resolve())
+        for key in (
+            "condition_count", "completed_condition_count", "planned_condition_count",
+            "plant_hash", "control_count", "detector_count", "raw_detector_count",
+        ):
+            if key in result:
+                summary[key] = result[key]
+    summary["terminal_output_contract"] = "bounded_summary_full_data_in_artifact"
+    return summary
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(); parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG); parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -401,7 +495,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "plan": result = plan(args.config, args.output, mode=mode, scan=args.scan)
         elif args.command == "run": result = run_condition(args.config, args.output, mode=mode, scan=args.scan, condition_index=args.condition_index, resume=args.resume, allow_reference=args.allow_reference, max_candidate_boundaries=args.max_candidate_boundaries)
         else: result = merge(args.config, args.output, mode=mode, scan=args.scan, iteration_id=args.iteration_id)
-    print(json.dumps(result, indent=2, sort_keys=True)); return 0
+    print(json.dumps(_terminal_summary(args.command, result, args.output, config),
+                     indent=2, sort_keys=True))
+    return 0
 
 
 if __name__ == "__main__": raise SystemExit(main())
