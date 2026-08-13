@@ -7,21 +7,14 @@ from typing import Any
 import numpy as np
 
 from hdfa_rl_suite.google_pure_source_exact.figure5a.plant import Figure5aStimPlant
+from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_plant
 
 from .contracts import NONFINAL, SOURCE_LITERAL, SOURCE_UNSPECIFIED, V13_SCHEMA
 from .io import ARTIFACT_ROOT, ROOT, atomic_json, atomic_text, canonical_hash, config, file_hash, read_json
 
 
 def _figure5a_plant() -> Figure5aStimPlant:
-    value = read_json(ROOT / "configs/google_pure_source_exact/figure5a.json")["plant"]
-    return Figure5aStimPlant(
-        rounds=int(value["circuit_rounds"]), basis=str(value["basis"]),
-        ensemble_seed=int(value["ensemble_seed"]),
-        one_qubit_irreducible=tuple(value["one_qubit_irreducible"]),
-        two_qubit_irreducible=tuple(value["two_qubit_irreducible"]),
-        one_qubit_omega=tuple(value["one_qubit_omega"]),
-        two_qubit_omega=tuple(value["two_qubit_omega"]),
-    )
+    return build_plant(read_json(ROOT / "configs/google_pure_source_exact/figure5a.json"))
 
 
 def _decode_evaluate(plant: Figure5aStimPlant, decoder: Any, controls: np.ndarray,

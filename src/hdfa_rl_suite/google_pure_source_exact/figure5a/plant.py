@@ -3,8 +3,9 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, replace
 from hashlib import sha256
+from itertools import product
 import math
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 
@@ -20,6 +21,17 @@ class GateParameter:
     detectors_influenced: tuple[int, ...]
     irreducible_error: float
     omega_sensitivity: float
+
+
+@dataclass(frozen=True)
+class PauliChannelOccurrence:
+    """One independent physical depolarizing-channel occurrence."""
+
+    occurrence_id: str
+    parameter_index: int
+    instruction_index: int
+    timing: str
+    qubits: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -67,20 +79,55 @@ class Figure5aStimPlant:
 
     STIM_DEPOLARIZE1_PROBABILITY_CEILING = 3.0 / 4.0
     STIM_DEPOLARIZE2_PROBABILITY_CEILING = 15.0 / 16.0
+    ONE_QUBIT_INJECTION_MAPPINGS = (
+        "per_qubit_operation_aggregate",
+        "one_location_per_cycle",
+    )
+    EXACT_MARGINAL_EVALUATOR_VERSION = "channel-wise-pauli-parity.v1"
+    _ONE_QUBIT_PAULI_BRANCHES = tuple((pauli,) for pauli in "XYZ")
+    _TWO_QUBIT_PAULI_BRANCHES = tuple(
+        branch for branch in product("IXYZ", repeat=2) if branch != ("I", "I"))
+    _FAULT_SIGNATURE_CACHE: dict[
+        str, tuple[tuple[np.ndarray, ...], np.ndarray, np.ndarray, str]] = {}
 
     def __init__(self, *, rounds: int, basis: str, ensemble_seed: int,
                  one_qubit_irreducible: tuple[float, float],
                  two_qubit_irreducible: tuple[float, float],
                  one_qubit_omega: tuple[float, float],
-                 two_qubit_omega: tuple[float, float]) -> None:
+                 two_qubit_omega: tuple[float, float],
+                 irreducible_global_scale: float = 1.0,
+                 one_qubit_omega_global_scale: float = 1.0,
+                 two_qubit_omega_global_scale: float = 1.0,
+                 omega_coordinate_scales: tuple[float, ...] | None = None,
+                 one_qubit_injection_mapping: str =
+                 "per_qubit_operation_aggregate") -> None:
         try:
             import stim
         except ImportError as error:  # pragma: no cover
             raise RuntimeError("Stim is required") from error
-        if rounds <= 0 or basis not in {"x", "z"}:
+        scales = np.asarray([
+            irreducible_global_scale,
+            one_qubit_omega_global_scale,
+            two_qubit_omega_global_scale,
+        ], dtype=float)
+        if (rounds <= 0 or basis not in {"x", "z"}
+                or one_qubit_injection_mapping not in self.ONE_QUBIT_INJECTION_MAPPINGS
+                or not np.all(np.isfinite(scales)) or np.any(scales <= 0)):
             raise ValueError("invalid distance-3 memory circuit")
         self._stim = stim
         self.rounds, self.basis = int(rounds), str(basis)
+        self.one_qubit_injection_mapping = str(one_qubit_injection_mapping)
+        self.irreducible_global_scale = float(irreducible_global_scale)
+        self.one_qubit_omega_global_scale = float(one_qubit_omega_global_scale)
+        self.two_qubit_omega_global_scale = float(two_qubit_omega_global_scale)
+        coordinate_scales = (np.ones(41, dtype=float) if omega_coordinate_scales is None
+                             else np.asarray(omega_coordinate_scales, dtype=float))
+        if (coordinate_scales.shape != (41,) or not np.all(np.isfinite(coordinate_scales))
+                or np.any(coordinate_scales <= 0)):
+            raise ValueError("omega coordinate scales must contain 41 positive finite values")
+        coordinate_scales = coordinate_scales.copy()
+        coordinate_scales.setflags(write=False)
+        self.omega_coordinate_scales = coordinate_scales
         self._reference = stim.Circuit.generated(
             f"surface_code:rotated_memory_{basis}", distance=3, rounds=rounds).flattened()
         self.raw_detector_count = int(self._reference.num_detectors)
@@ -92,13 +139,25 @@ class Figure5aStimPlant:
         for q in qubits:
             inventory.append(GateParameter(
                 f"sq-q{q}", "single_qubit", (q,), tuple(one_locations[q]), (),
-                float(rng.uniform(*one_qubit_irreducible)), float(rng.uniform(*one_qubit_omega))))
+                float(rng.uniform(*one_qubit_irreducible) * self.irreducible_global_scale),
+                float(rng.uniform(*one_qubit_omega) * self.one_qubit_omega_global_scale *
+                      self.omega_coordinate_scales[len(inventory)])))
         for left, right in edges:
             inventory.append(GateParameter(
                 f"tq-q{left}-q{right}", "two_qubit", (left, right), tuple(two_locations[(left, right)]), (),
-                float(rng.uniform(*two_qubit_irreducible)), float(rng.uniform(*two_qubit_omega))))
+                float(rng.uniform(*two_qubit_irreducible) * self.irreducible_global_scale),
+                float(rng.uniform(*two_qubit_omega) * self.two_qubit_omega_global_scale *
+                      self.omega_coordinate_scales[len(inventory)])))
         self._inventory = tuple(inventory)
-        raw_parameter_detectors = [self._dem_detectors(index) for index in range(len(inventory))]
+        self.channel_occurrences = self._enumerate_physical_channel_occurrences()
+        self.fault_signatures, self._channel_detector_branch_flip_fractions, \
+            self._channel_parameter_indices, self.fault_signature_hash = \
+            self._build_exact_fault_signatures()
+        raw_parameter_detectors = [set() for _ in inventory]
+        for occurrence, signatures in zip(
+                self.channel_occurrences, self.fault_signatures, strict=True):
+            raw_parameter_detectors[occurrence.parameter_index].update(
+                np.flatnonzero(np.any(signatures, axis=0)).astype(int).tolist())
         raw_mask = np.zeros((self.raw_detector_count, len(inventory)), dtype=bool)
         for parameter, detectors in enumerate(raw_parameter_detectors):
             raw_mask[list(detectors), parameter] = True
@@ -138,6 +197,15 @@ class Figure5aStimPlant:
             "reward_component_raw_detectors": [list(group) for group in self.reward_component_raw_detectors],
             "reward_component_keys": list(self.reward_component_keys),
             "ensemble_seed": int(ensemble_seed),
+            "irreducible_global_scale": self.irreducible_global_scale,
+            "one_qubit_omega_global_scale": self.one_qubit_omega_global_scale,
+            "two_qubit_omega_global_scale": self.two_qubit_omega_global_scale,
+            "omega_coordinate_scales": self.omega_coordinate_scales.tolist(),
+            "one_qubit_injection_mapping": self.one_qubit_injection_mapping,
+            "physical_channel_occurrences": [
+                asdict(occurrence) for occurrence in self.channel_occurrences],
+            "exact_marginal_evaluator_version": self.EXACT_MARGINAL_EVALUATOR_VERSION,
+            "fault_signature_hash": self.fault_signature_hash,
             "canonical_action_execution": "identity_applied_gaussian",
             "constructor_requires_bounded_action_domain": False,
         })
@@ -205,13 +273,18 @@ class Figure5aStimPlant:
                 for q in targets:
                     one_locations.setdefault(q, []).append(f"instruction:{index}:{instruction.name}")
         ordered_qubits, ordered_edges = tuple(sorted(qubits)), tuple(sorted(edges))
+        if self.one_qubit_injection_mapping == "one_location_per_cycle":
+            one_locations = {
+                q: [f"cycle:{cycle}:synthetic_1q_layer" for cycle in range(self.rounds)]
+                for q in ordered_qubits
+            }
         if set(one_locations) != set(ordered_qubits) or set(two_locations) != set(ordered_edges):
             raise RuntimeError("not every gate-site has a circuit location")
         return ordered_qubits, ordered_edges, one_locations, two_locations
 
     @property
     def control_count(self) -> int:
-        return len(self.inventory)
+        return len(self._inventory)
 
     @staticmethod
     def optimum(epoch: int, frequency: float) -> np.ndarray:
@@ -241,14 +314,24 @@ class Figure5aStimPlant:
         one = {item.qubits[0]: values[index] for index, item in enumerate(self._inventory[:17])}
         two = {item.qubits: values[index + 17] for index, item in enumerate(self._inventory[17:])}
         circuit = self._stim.Circuit()
+        awaiting_cycle_start = True
         for instruction in self._reference:
             targets = [int(target.value) for target in instruction.targets_copy() if target.is_qubit_target]
-            if instruction.name in {"M", "MX", "MR", "MRX"}:
+            aggregate = self.one_qubit_injection_mapping == "per_qubit_operation_aggregate"
+            if aggregate and instruction.name in {"M", "MX", "MR", "MRX"}:
                 for q in targets:
                     if one[q] > 0:
                         circuit.append("DEPOLARIZE1", [q], float(one[q]))
             circuit.append(instruction)
-            if instruction.name in {"R", "RX", "H"}:
+            if (self.one_qubit_injection_mapping == "one_location_per_cycle"
+                    and instruction.name == "TICK" and awaiting_cycle_start):
+                for q, probability in one.items():
+                    if probability > 0:
+                        circuit.append("DEPOLARIZE1", [q], float(probability))
+                awaiting_cycle_start = False
+            if instruction.name in {"MR", "MRX"}:
+                awaiting_cycle_start = True
+            if aggregate and instruction.name in {"R", "RX", "H"}:
                 for q in targets:
                     if one[q] > 0:
                         circuit.append("DEPOLARIZE1", [q], float(one[q]))
@@ -259,19 +342,137 @@ class Figure5aStimPlant:
                         circuit.append("DEPOLARIZE2", targets[offset:offset + 2], float(two[edge]))
         return circuit
 
-    def _dem_detectors(self, parameter: int) -> set[int]:
-        values = np.zeros(41)
-        values[parameter] = 1e-3
-        dem = self._circuit_from_probabilities(values).detector_error_model(
-            decompose_errors=False, approximate_disjoint_errors=True, flatten_loops=True)
-        detectors: set[int] = set()
-        for instruction in dem.flattened():
-            if instruction.type != "error":
-                continue
-            for target in instruction.targets_copy():
-                if target.is_relative_detector_id():
-                    detectors.add(int(target.val))
-        return detectors
+    def _enumerate_physical_channel_occurrences(
+        self,
+    ) -> tuple[PauliChannelOccurrence, ...]:
+        """Mirror every channel inserted by ``_circuit_from_probabilities``."""
+        one_parameter = {
+            item.qubits[0]: index for index, item in enumerate(self._inventory[:17])}
+        two_parameter = {
+            item.qubits: index + 17 for index, item in enumerate(self._inventory[17:])}
+        occurrences: list[PauliChannelOccurrence] = []
+        awaiting_cycle_start = True
+        cycle = 0
+
+        def add(parameter: int, instruction: int, timing: str,
+                qubits: tuple[int, ...], label: str) -> None:
+            occurrences.append(PauliChannelOccurrence(
+                occurrence_id=f"{label}:{timing}:instruction:{instruction}",
+                parameter_index=int(parameter), instruction_index=int(instruction),
+                timing=timing, qubits=qubits))
+
+        for instruction_index, instruction in enumerate(self._reference):
+            targets = tuple(
+                int(target.value) for target in instruction.targets_copy()
+                if target.is_qubit_target)
+            aggregate = self.one_qubit_injection_mapping == \
+                "per_qubit_operation_aggregate"
+            if aggregate and instruction.name in {"M", "MX", "MR", "MRX"}:
+                for qubit in targets:
+                    add(one_parameter[qubit], instruction_index, "before", (qubit,),
+                        f"q{qubit}:{instruction.name}")
+            if (self.one_qubit_injection_mapping == "one_location_per_cycle"
+                    and instruction.name == "TICK" and awaiting_cycle_start):
+                for qubit, parameter in one_parameter.items():
+                    add(parameter, instruction_index, "after", (qubit,),
+                        f"q{qubit}:cycle:{cycle}:synthetic_1q_layer")
+                cycle += 1
+                awaiting_cycle_start = False
+            if instruction.name in {"MR", "MRX"}:
+                awaiting_cycle_start = True
+            if aggregate and instruction.name in {"R", "RX", "H"}:
+                for qubit in targets:
+                    add(one_parameter[qubit], instruction_index, "after", (qubit,),
+                        f"q{qubit}:{instruction.name}")
+            elif instruction.name == "CX":
+                for offset in range(0, len(targets), 2):
+                    ordered = targets[offset:offset + 2]
+                    edge = tuple(sorted(ordered))
+                    add(two_parameter[edge], instruction_index, "after", ordered,
+                        f"q{edge[0]}-q{edge[1]}:CX")
+        if (self.one_qubit_injection_mapping == "one_location_per_cycle"
+                and cycle != self.rounds):
+            raise RuntimeError(
+                f"expected {self.rounds} synthetic 1Q layers, found {cycle}")
+        actual_counts = np.bincount(
+            [item.parameter_index for item in occurrences], minlength=self.control_count)
+        expected_counts = np.asarray(
+            [len(item.circuit_locations) for item in self._inventory], dtype=int)
+        if not np.array_equal(actual_counts, expected_counts):
+            raise RuntimeError("physical channel occurrences do not match the inventory")
+        return tuple(occurrences)
+
+    @classmethod
+    def _pauli_branches(cls, arity: int) -> tuple[tuple[str, ...], ...]:
+        if arity == 1:
+            return cls._ONE_QUBIT_PAULI_BRANCHES
+        if arity == 2:
+            return cls._TWO_QUBIT_PAULI_BRANCHES
+        raise ValueError("only one- and two-qubit Pauli channels are supported")
+
+    def _build_exact_fault_signatures(
+        self,
+    ) -> tuple[tuple[np.ndarray, ...], np.ndarray, np.ndarray, str]:
+        """Propagate every mutually exclusive Pauli branch in one bit-packed batch."""
+        cache_key = canonical_hash({
+            "evaluator": self.EXACT_MARGINAL_EVALUATOR_VERSION,
+            "stim_version": getattr(self._stim, "__version__", "unknown"),
+            "reference_circuit": str(self._reference),
+            "occurrences": [asdict(item) for item in self.channel_occurrences],
+        })
+        cached = self._FAULT_SIGNATURE_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+        branch_counts = [
+            len(self._pauli_branches(len(occurrence.qubits)))
+            for occurrence in self.channel_occurrences]
+        offsets = np.cumsum([0, *branch_counts])
+        simulator = self._stim.FlipSimulator(
+            batch_size=int(offsets[-1]), num_qubits=int(self._reference.num_qubits),
+            disable_stabilizer_randomization=True)
+        before: dict[int, list[int]] = {}
+        after: dict[int, list[int]] = {}
+        for occurrence_index, occurrence in enumerate(self.channel_occurrences):
+            destination = before if occurrence.timing == "before" else after
+            destination.setdefault(occurrence.instruction_index, []).append(occurrence_index)
+
+        def inject(occurrence_indices: list[int]) -> None:
+            for occurrence_index in occurrence_indices:
+                occurrence = self.channel_occurrences[occurrence_index]
+                branches = self._pauli_branches(len(occurrence.qubits))
+                for branch_index, branch in enumerate(branches):
+                    instance = int(offsets[occurrence_index] + branch_index)
+                    for qubit, pauli in zip(occurrence.qubits, branch, strict=True):
+                        if pauli != "I":
+                            simulator.set_pauli_flip(
+                                pauli, qubit_index=qubit, instance_index=instance)
+
+        for instruction_index, instruction in enumerate(self._reference):
+            inject(before.get(instruction_index, []))
+            simulator.do(instruction)
+            inject(after.get(instruction_index, []))
+        if simulator.num_detectors != self.raw_detector_count:
+            raise RuntimeError("fault-signature detector count changed")
+        all_signatures = np.asarray(simulator.get_detector_flips(), dtype=bool).T
+        signatures: list[np.ndarray] = []
+        fractions: list[np.ndarray] = []
+        digest = sha256(self.EXACT_MARGINAL_EVALUATOR_VERSION.encode("utf-8"))
+        digest.update(canonical_hash([
+            asdict(occurrence) for occurrence in self.channel_occurrences]).encode("utf-8"))
+        for occurrence_index in range(len(self.channel_occurrences)):
+            value = all_signatures[offsets[occurrence_index]:offsets[occurrence_index + 1]].copy()
+            value.setflags(write=False)
+            signatures.append(value)
+            fractions.append(np.mean(value, axis=0))
+            digest.update(np.packbits(value, axis=None, bitorder="little").tobytes())
+        fraction_array = np.asarray(fractions, dtype=float)
+        parameter_indices = np.asarray(
+            [item.parameter_index for item in self.channel_occurrences], dtype=int)
+        fraction_array.setflags(write=False)
+        parameter_indices.setflags(write=False)
+        result = tuple(signatures), fraction_array, parameter_indices, digest.hexdigest()
+        self._FAULT_SIGNATURE_CACHE[cache_key] = result
+        return result
 
     def _reduce_raw_counts(self, raw_counts: np.ndarray) -> np.ndarray:
         values = np.asarray(raw_counts, dtype=np.int64)
@@ -282,11 +483,46 @@ class Figure5aStimPlant:
             for group in self.reward_component_raw_detectors
         ], dtype=float)
 
-    def raw_detector_marginals(self, controls: np.ndarray, *, epoch: int, frequency: float,
-                               target_controls: np.ndarray | None = None) -> np.ndarray:
-        """Exact detector marginals of the actual Stim detector error model."""
-        circuit = self._circuit_from_probabilities(self.probabilities(
+    def _validate_probability_vector(self, probabilities: np.ndarray) -> np.ndarray:
+        values = np.asarray(probabilities, dtype=float)
+        if (values.shape != (self.control_count,) or not np.all(np.isfinite(values))
+                or np.any(values < 0) or np.any(values >= self.probability_ceilings)):
+            raise ValueError("invalid physical probability vector")
+        return values
+
+    def exact_raw_detector_marginals(
+        self, controls: np.ndarray, *, epoch: int, frequency: float,
+        target_controls: np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Exact marginals of independent physical, mutually exclusive Pauli channels."""
+        return self._exact_raw_detector_marginals_from_probabilities(self.probabilities(
             controls, epoch, frequency, target_controls=target_controls))
+
+    def _exact_raw_detector_marginals_from_probabilities(
+        self, probabilities: np.ndarray,
+    ) -> np.ndarray:
+        values = self._validate_probability_vector(probabilities)
+        occurrence_probabilities = values[self._channel_parameter_indices]
+        channel_characteristics = 1.0 - 2.0 * occurrence_probabilities[:, None] * \
+            self._channel_detector_branch_flip_fractions
+        result = 0.5 * (1.0 - np.prod(channel_characteristics, axis=0))
+        result.setflags(write=False)
+        return result
+
+    def approximate_dem_raw_detector_marginals(
+        self, controls: np.ndarray, *, epoch: int, frequency: float,
+        target_controls: np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Legacy DEM-disjoint approximation retained only for explicit audits."""
+        return self._approximate_dem_raw_detector_marginals_from_probabilities(
+            self.probabilities(
+                controls, epoch, frequency, target_controls=target_controls))
+
+    def _approximate_dem_raw_detector_marginals_from_probabilities(
+        self, probabilities: np.ndarray,
+    ) -> np.ndarray:
+        values = self._validate_probability_vector(probabilities)
+        circuit = self._circuit_from_probabilities(values)
         dem = circuit.detector_error_model(
             decompose_errors=False, approximate_disjoint_errors=True, flatten_loops=True).flattened()
         parity_complement = np.ones(self.raw_detector_count, dtype=float)
@@ -309,23 +545,59 @@ class Figure5aStimPlant:
         result.setflags(write=False)
         return result
 
-    # Compatibility for the calibration ablation; canonical tests and callers
-    # use the public exact-marginal interface above.
+    # Compatibility aliases are exact and never route canonical code through
+    # the explicitly named approximate DEM-disjoint evaluator.
+    raw_detector_marginals = exact_raw_detector_marginals
     _raw_detector_marginals = raw_detector_marginals
+
+    def exact_reward_rates(self, controls: np.ndarray, *, epoch: int, frequency: float,
+                           target_controls: np.ndarray | None = None) -> np.ndarray:
+        raw = self.exact_raw_detector_marginals(
+            controls, epoch=epoch, frequency=frequency,
+            target_controls=target_controls)
+        return np.asarray([
+            float(np.mean(raw[list(group)]))
+            for group in self.reward_component_raw_detectors
+        ], dtype=float)
+
+    def exact_global_edr(self, controls: np.ndarray, *, epoch: int, frequency: float,
+                         target_controls: np.ndarray | None = None) -> float:
+        """Exact mean EDR over raw detector opportunities, as in Figure S3."""
+        return float(np.mean(self.exact_raw_detector_marginals(
+            controls, epoch=epoch, frequency=frequency,
+            target_controls=target_controls)))
+
+    def approximate_dem_reward_rates(
+        self, controls: np.ndarray, *, epoch: int, frequency: float,
+        target_controls: np.ndarray | None = None,
+    ) -> np.ndarray:
+        raw = self.approximate_dem_raw_detector_marginals(
+            controls, epoch=epoch, frequency=frequency,
+            target_controls=target_controls)
+        return np.asarray([
+            float(np.mean(raw[list(group)]))
+            for group in self.reward_component_raw_detectors
+        ], dtype=float)
+
+    def approximate_dem_global_edr(
+        self, controls: np.ndarray, *, epoch: int, frequency: float,
+        target_controls: np.ndarray | None = None,
+    ) -> float:
+        return float(np.mean(self.approximate_dem_raw_detector_marginals(
+            controls, epoch=epoch, frequency=frequency,
+            target_controls=target_controls)))
 
     def expected_reward_rates(self, controls: np.ndarray, *, epoch: int, frequency: float,
                               target_controls: np.ndarray | None = None) -> np.ndarray:
-        raw = self.raw_detector_marginals(
-            controls, epoch=epoch, frequency=frequency, target_controls=target_controls)
-        return np.asarray([
-            float(np.mean(raw[list(group)])) for group in self.reward_component_raw_detectors
-        ], dtype=float)
+        return self.exact_reward_rates(
+            controls, epoch=epoch, frequency=frequency,
+            target_controls=target_controls)
 
     def expected_global_edr(self, controls: np.ndarray, *, epoch: int, frequency: float,
                             target_controls: np.ndarray | None = None) -> float:
-        """Mean EDR over raw detector opportunities, as in Figure S3."""
-        return float(np.mean(self.raw_detector_marginals(
-            controls, epoch=epoch, frequency=frequency, target_controls=target_controls)))
+        return self.exact_global_edr(
+            controls, epoch=epoch, frequency=frequency,
+            target_controls=target_controls)
 
     def sample_detector_observation(self, controls: np.ndarray, *, epoch: int, frequency: float,
                                     qec_cycles: int, seed: int,

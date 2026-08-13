@@ -18,13 +18,15 @@ class Figure5aBoundedActionAblation:
     """Phase-independent scaled-tanh domain used only by legacy ablations."""
 
     plant: Figure5aStimPlant
-    maximum_probability: float = 0.49
+    maximum_probability: float | None = None
     action_probability_margin_fraction: float = 1e-6
 
     def __post_init__(self) -> None:
-        maximum_probability = float(self.maximum_probability)
+        maximum_probability = (None if self.maximum_probability is None
+                               else float(self.maximum_probability))
         margin = float(self.action_probability_margin_fraction)
-        if (not 0.0 < maximum_probability <=
+        if (maximum_probability is not None
+                and not 0.0 < maximum_probability <=
                 float(np.min(self.plant.probability_ceilings))):
             raise ValueError(
                 "bounded-action maximum probability must fit every Stim channel")
@@ -34,7 +36,9 @@ class Figure5aBoundedActionAblation:
             [item.irreducible_error for item in self.plant.inventory], dtype=float)
         omega = np.asarray(
             [item.omega_sensitivity for item in self.plant.inventory], dtype=float)
-        probability_ceiling = maximum_probability * (1.0 - margin)
+        probability_ceiling = (
+            self.plant.probability_ceilings if maximum_probability is None
+            else np.full(self.plant.control_count, maximum_probability)) * (1.0 - margin)
         maximum_mismatch = np.sqrt((probability_ceiling - irreducible) / omega)
         control_limits = maximum_mismatch - 1.0
         if not np.all(np.isfinite(control_limits)) or np.any(control_limits <= 1.0):
