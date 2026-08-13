@@ -27,9 +27,9 @@ STREAMS = ("fixed", "optimal", "stochastic", "learned_mean")
 DIAGNOSTIC_STREAMS = ("fixed", "optimal", "learned_mean")
 STOCHASTIC_STREAM = "stochastic"
 COORDINATE_CONTRACT = "SOURCE_GAUSSIAN_P_EQUALS_APPLIED_PLANT_P_V1"
-FIGURE5A_IMPLEMENTATION_VERSION = "figure5a-source-coordinate-aggregated-diagnostics.v2"
-CHECKPOINT_SCHEMA_VERSION = "figure5a-cell-checkpoint.v5"
-ARTIFACT_SCHEMA_VERSION = "figure5a-cell.v5"
+FIGURE5A_IMPLEMENTATION_VERSION = "figure5a-source-coordinate-unbounded-plant.v3"
+CHECKPOINT_SCHEMA_VERSION = "figure5a-cell-checkpoint.v6"
+ARTIFACT_SCHEMA_VERSION = "figure5a-cell.v6"
 DIAGNOSTIC_ACQUISITION_MODE = DIAGNOSTIC_STREAM_ACQUISITION_CONTRACT
 
 
@@ -258,6 +258,10 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             "reward_sigma_gradient_norm": loss.diagnostics["reward_sigma_gradient_norm"],
             "entropy_sigma_gradient_norm": loss.diagnostics["entropy_sigma_gradient_norm"],
             "fraction_at_positivity_guard": update["fraction_at_positivity_guard"],
+            "fraction_at_sigma_min": update["fraction_at_sigma_min"],
+            "fraction_at_sigma_max": update["fraction_at_sigma_max"],
+            "unclipped_sigma_min": update["unclipped_sigma_min"],
+            "unclipped_sigma_max": update["unclipped_sigma_max"],
             "gradient_clipping": {key: update[key] for key in (
                 "gradient_clipping_mode", "gradient_clip_threshold",
                 "gradient_global_l2_norm_before_clipping",

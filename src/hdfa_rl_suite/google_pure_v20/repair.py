@@ -7,6 +7,7 @@ import time
 from typing import Any, Mapping
 
 import numpy as np
+from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import Figure5aBoundedActionAblation
 
 from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import (
     STREAMS,
@@ -142,6 +143,7 @@ def run_repaired_fast_acquisition() -> dict[str, Any]:
     cell = cfg["postrepair"]
     source = _source_config()
     plant = build_plant(source)
+    bounded = Figure5aBoundedActionAblation(plant)
     boundary = _boundary(plant)
     parent = _controller_spec()
     protocol = Figure5aProtocol(
@@ -234,7 +236,7 @@ def run_repaired_fast_acquisition() -> dict[str, Any]:
         raw_update_direction = -loss.grad_mean
         projected_grad_mean = project_shared_subspace(loss.grad_mean)
         projected_update_direction = -projected_grad_mean
-        target_latent = plant.latent_controls_for(plant.optimum(epoch, frequency))
+        target_latent = bounded.latent_controls_for(plant.optimum(epoch, frequency))
         beneficial = target_latent - policy.mean
         beneficial /= max(float(np.linalg.norm(beneficial)), 1e-15)
         update = optimizer.step(
@@ -259,8 +261,8 @@ def run_repaired_fast_acquisition() -> dict[str, Any]:
             "latent_behavior_mean": active["latent_behavior_mean"],
             "behavior_sigma": active["behavior_sigma"],
             "post_update_mean": boundary.apply(
-                plant.apply_control_transform(policy.mean)).native.tolist(),
-            "post_update_normalized_mean": plant.apply_control_transform(policy.mean).tolist(),
+                bounded.apply_control_transform(policy.mean)).native.tolist(),
+            "post_update_normalized_mean": bounded.apply_control_transform(policy.mean).tolist(),
             "post_update_latent_mean": policy.mean.tolist(),
             "post_update_sigma": policy.sigma.tolist(),
             "policy_entropy": entropy(np.asarray(active["behavior_sigma"])),

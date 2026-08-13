@@ -18,6 +18,7 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import (
     _load_runtime,
     _new_state,
 )
+from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import Figure5aBoundedActionAblation
 from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import (
     Figure5aProtocol,
     atomic_json as _source_atomic_json,
@@ -88,6 +89,7 @@ def run_experimental_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlan
     if controller.active_dimensions != len(plant.parameter_ids):
         raise ValueError("controller active dimension does not match the plant")
     identity = _experimental_identity(controller)
+    bounded = Figure5aBoundedActionAblation(plant)
     checkpoint_preexisted = checkpoint_path.is_file()
     if checkpoint_preexisted:
         if not resume:
@@ -206,15 +208,15 @@ def run_experimental_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlan
             "latent_behavior_mean": active["latent_behavior_mean"],
             "behavior_sigma": active["behavior_sigma"],
             "post_update_mean": boundary.apply(
-                plant.apply_control_transform(policy.mean)).native.tolist(),
-            "post_update_normalized_mean": plant.apply_control_transform(policy.mean).tolist(),
+                bounded.apply_control_transform(policy.mean)).native.tolist(),
+            "post_update_normalized_mean": bounded.apply_control_transform(policy.mean).tolist(),
             "post_update_latent_mean": policy.mean.tolist(),
             "post_update_sigma": policy.sigma.tolist(),
             "action_execution": "plant_derived_per_coordinate_scaled_tanh",
             "plant_boundary_execution": "v15_source_normalized_to_native_once",
             "likelihood_space": "latent_gaussian",
             "action_transform_uses_hidden_optimum": False,
-            "control_limits": plant.control_limits.tolist(),
+            "control_limits": bounded.control_limits.tolist(),
             "policy_entropy": entropy(np.asarray(active["behavior_sigma"])),
             "counts": {stream: list(map(int, active["counts"][stream])) for stream in STREAMS},
             "stream_totals": {

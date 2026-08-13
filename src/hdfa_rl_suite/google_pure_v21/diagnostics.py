@@ -51,7 +51,9 @@ def _reference_rows() -> list[dict[str, Any]]:
 
 
 def _beneficial(mean: np.ndarray, epoch: int, frequency: float) -> np.ndarray:
-    target = evaluator().plant.latent_controls_for(evaluator().plant.optimum(epoch, frequency))
+    evaluation = evaluator()
+    target = evaluation.bounded.latent_controls_for(
+        evaluation.plant.optimum(epoch, frequency))
     value = target - np.asarray(mean, dtype=float)
     return value / max(float(np.linalg.norm(value)), 1e-15)
 

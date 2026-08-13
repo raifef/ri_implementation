@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 import numpy as np
+from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import Figure5aBoundedActionAblation
 
 from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import canonical_hash as shard_hash
 from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_plant
@@ -245,14 +246,15 @@ class ExactDetectorEvaluator:
 
     def __init__(self) -> None:
         self.plant = build_plant(_source_config())
+        self.bounded = Figure5aBoundedActionAblation(self.plant)
         self.boundary = _boundary(self.plant)
         self._cache: dict[tuple[float, float, bytes], np.ndarray] = {}
 
     def normalized_to_latent(self, normalized: np.ndarray) -> np.ndarray:
-        return self.plant.latent_controls_for(np.asarray(normalized, dtype=float))
+        return self.bounded.latent_controls_for(np.asarray(normalized, dtype=float))
 
     def native(self, latent: np.ndarray) -> np.ndarray:
-        normalized = self.plant.apply_control_transform(np.asarray(latent, dtype=float))
+        normalized = self.bounded.apply_control_transform(np.asarray(latent, dtype=float))
         return self.boundary.apply(normalized).native
 
     def detector_expectations(self, latent: np.ndarray, epoch: float,

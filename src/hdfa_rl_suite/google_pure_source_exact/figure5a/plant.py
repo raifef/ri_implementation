@@ -65,13 +65,14 @@ def _derived_seed(seed: int, *parts: object) -> int:
 class Figure5aStimPlant:
     """A gate-local Stim circuit with 17 one-qubit and 24 two-qubit controls."""
 
+    STIM_DEPOLARIZE1_PROBABILITY_CEILING = 3.0 / 4.0
+    STIM_DEPOLARIZE2_PROBABILITY_CEILING = 15.0 / 16.0
+
     def __init__(self, *, rounds: int, basis: str, ensemble_seed: int,
                  one_qubit_irreducible: tuple[float, float],
                  two_qubit_irreducible: tuple[float, float],
                  one_qubit_omega: tuple[float, float],
-                 two_qubit_omega: tuple[float, float],
-                 maximum_probability: float = 0.08,
-                 action_probability_margin_fraction: float = 1e-6) -> None:
+                 two_qubit_omega: tuple[float, float]) -> None:
         try:
             import stim
         except ImportError as error:  # pragma: no cover
@@ -80,10 +81,6 @@ class Figure5aStimPlant:
             raise ValueError("invalid distance-3 memory circuit")
         self._stim = stim
         self.rounds, self.basis = int(rounds), str(basis)
-        self.maximum_probability = float(maximum_probability)
-        self.action_probability_margin_fraction = float(action_probability_margin_fraction)
-        if not 0.0 < self.action_probability_margin_fraction < 1.0:
-            raise ValueError("action probability margin fraction must lie in (0,1)")
         self._reference = stim.Circuit.generated(
             f"surface_code:rotated_memory_{basis}", distance=3, rounds=rounds).flattened()
         self.raw_detector_count = int(self._reference.num_detectors)
@@ -117,23 +114,24 @@ class Figure5aStimPlant:
         ) for index, item in enumerate(inventory))
         irreducible = np.asarray([item.irreducible_error for item in self.inventory])
         omega = np.asarray([item.omega_sensitivity for item in self.inventory])
-        probability_ceiling = self.maximum_probability * (
-            1.0 - self.action_probability_margin_fraction)
-        self._maximum_mismatch = np.sqrt((probability_ceiling - irreducible) / omega)
-        self._control_limits = self._maximum_mismatch - 1.0
-        if (not np.all(np.isfinite(self._control_limits)) or
-                np.any(self._control_limits <= 1.0)):
-            raise ValueError(
-                "frozen Figure 5a plant has no symmetric action domain containing the full optimum range")
-        self._control_limits.setflags(write=False)
-        self._maximum_mismatch.setflags(write=False)
+        self.probability_ceilings = np.asarray([
+            self.STIM_DEPOLARIZE1_PROBABILITY_CEILING
+            if item.gate_type == "single_qubit"
+            else self.STIM_DEPOLARIZE2_PROBABILITY_CEILING
+            for item in self.inventory
+        ], dtype=float)
+        self.probability_ceilings.setflags(write=False)
+        if (not np.all(np.isfinite(irreducible)) or np.any(irreducible < 0)
+                or np.any(irreducible >= self.probability_ceilings)
+                or not np.all(np.isfinite(omega)) or np.any(omega <= 0)):
+            raise ValueError("invalid Figure 5a irreducible errors or quadratic sensitivities")
         if not self.mask.any(axis=0).all() or not self.mask.any(axis=1).all():
             raise RuntimeError("Stim-derived detector mask has an empty parameter or detector")
         self.parameter_ids = tuple(item.parameter_id for item in self.inventory)
         self.plant_hash = canonical_hash({
             "stim_version": getattr(stim, "__version__", "unknown"), "distance": 3,
-            "rounds": rounds, "basis": basis, "maximum_probability": maximum_probability,
-            "action_probability_margin_fraction": self.action_probability_margin_fraction,
+            "rounds": rounds, "basis": basis,
+            "stim_probability_ceilings": self.probability_ceilings.tolist(),
             "inventory": [asdict(item) for item in self.inventory], "mask": self.mask.astype(int).tolist(),
             "raw_detector_count": self.raw_detector_count,
             "reward_representation": "time_translation_equivalence_class_mean_edr",
@@ -141,7 +139,7 @@ class Figure5aStimPlant:
             "reward_component_keys": list(self.reward_component_keys),
             "ensemble_seed": int(ensemble_seed),
             "canonical_action_execution": "identity_applied_gaussian",
-            "bounded_action_ablation_limits": self._control_limits.tolist(),
+            "constructor_requires_bounded_action_domain": False,
         })
 
     def _time_translation_equivalence_classes(
@@ -215,49 +213,6 @@ class Figure5aStimPlant:
     def control_count(self) -> int:
         return len(self.inventory)
 
-    @property
-    def control_limits(self) -> np.ndarray:
-        """Symmetric public action limits that are safe for every possible optimum."""
-        return self._control_limits
-
-    def normalized_control_limits(self, native_scale: np.ndarray | None = None) -> np.ndarray:
-        scale = (np.ones(self.control_count, dtype=float) if native_scale is None
-                 else np.asarray(native_scale, dtype=float))
-        if scale.shape != (self.control_count,) or np.any(scale <= 0) or not np.all(np.isfinite(scale)):
-            raise ValueError("native scale must be a positive 41-coordinate vector")
-        native_absolute_limit = self._maximum_mismatch - scale
-        normalized_limit = native_absolute_limit / scale
-        if np.any(normalized_limit <= 1.0):
-            raise ValueError(
-                "empirical normalization leaves no safe action domain containing the full sinusoidal optimum")
-        return normalized_limit
-
-    def apply_control_transform(self, latent_controls: np.ndarray,
-                                *, native_scale: np.ndarray | None = None) -> np.ndarray:
-        """Map Gaussian latent actions into the plant domain without clipping.
-
-        The scaled-tanh map is fixed, one-to-one, and independent of the hidden
-        optimum.  Its Jacobian therefore cancels from PPO ratios evaluated for the
-        same sampled action, so the Gaussian scores remain those of latent space.
-        """
-        latent = np.asarray(latent_controls, dtype=float)
-        if latent.shape[-1:] != (self.control_count,) or not np.all(np.isfinite(latent)):
-            raise ValueError("latent Figure 5a controls must end in 41 finite coordinates")
-        limits = self.normalized_control_limits(native_scale)
-        return limits * np.tanh(latent / limits)
-
-    def latent_controls_for(self, applied_controls: np.ndarray,
-                            *, native_scale: np.ndarray | None = None) -> np.ndarray:
-        """Invert the action transform for feasible deterministic plant controls."""
-        applied = np.asarray(applied_controls, dtype=float)
-        if applied.shape[-1:] != (self.control_count,) or not np.all(np.isfinite(applied)):
-            raise ValueError("applied Figure 5a controls must end in 41 finite coordinates")
-        limits = self.normalized_control_limits(native_scale)
-        ratio = applied / limits
-        if np.any(np.abs(ratio) >= 1.0):
-            raise ValueError("applied controls must lie strictly inside the frozen action domain")
-        return limits * np.arctanh(ratio)
-
     @staticmethod
     def optimum(epoch: int, frequency: float) -> np.ndarray:
         value = math.sin(2.0 * math.pi * float(frequency) * int(epoch))
@@ -275,7 +230,7 @@ class Figure5aStimPlant:
         irreducible = np.asarray([item.irreducible_error for item in self.inventory])
         omega = np.asarray([item.omega_sensitivity for item in self.inventory])
         probabilities = irreducible + omega * (policy - optimum) ** 2
-        if np.any(probabilities < 0) or np.any(probabilities >= self.maximum_probability):
+        if np.any(probabilities < 0) or np.any(probabilities >= self.probability_ceilings):
             raise ValueError("gate depolarization probability left the frozen physical range")
         return probabilities
 

@@ -9,6 +9,7 @@ from typing import Any, Mapping
 import numpy as np
 
 from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import run_cell
+from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import Figure5aBoundedActionAblation
 from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import (
     AcquisitionMode, Figure5aProtocol, ratio_from_raw_counts,
 )
@@ -419,6 +420,7 @@ def _period_summary(records: list[dict[str, Any]], frequency: float, period_inde
     fitted = estimate_sinusoidal_transfer(
         epochs, direction, frequency, minimum_cycles=1.0,
         maximum_condition_number=float(config()["identification"]["maximum_design_condition_number"]))
+    bounded = Figure5aBoundedActionAblation(plant)
     sigma_x = []
     sigma_u = []
     guards = []
@@ -435,7 +437,7 @@ def _period_summary(records: list[dict[str, Any]], frequency: float, period_inde
     for row in selected:
         latent_mean = np.asarray(row["latent_behavior_mean"], dtype=float)
         latent_sigma = np.asarray(row["behavior_sigma"], dtype=float)
-        derivative = 1.0 / np.cosh(latent_mean / plant.control_limits) ** 2
+        derivative = 1.0 / np.cosh(latent_mean / bounded.control_limits) ** 2
         native_sigma = boundary.native_scale * derivative * latent_sigma
         sigma_x.append(float(np.median(latent_sigma)))
         sigma_u.append(float(np.median(native_sigma)))
@@ -458,9 +460,9 @@ def _period_summary(records: list[dict[str, Any]], frequency: float, period_inde
     first_sigma = np.asarray(first["behavior_sigma"], dtype=float)
     last_sigma = np.asarray(last["post_update_sigma"], dtype=float)
     first_native = (boundary.native_scale /
-                    np.cosh(first_mean / plant.control_limits) ** 2 * first_sigma)
+                    np.cosh(first_mean / bounded.control_limits) ** 2 * first_sigma)
     last_native = (boundary.native_scale /
-                   np.cosh(last_mean / plant.control_limits) ** 2 * last_sigma)
+                   np.cosh(last_mean / bounded.control_limits) ** 2 * last_sigma)
     return {
         "period_index": period_index, "epoch_window": [start, stop],
         "complete": len(selected) == period, "epochs": len(selected),

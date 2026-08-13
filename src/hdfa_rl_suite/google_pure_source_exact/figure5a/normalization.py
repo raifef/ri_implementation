@@ -29,6 +29,7 @@ from hdfa_rl_suite.google_pure_source_exact.source_normalization import (
     canonical_hash,
 )
 
+from .bounded_action_ablation import Figure5aBoundedActionAblation
 from .plant import Figure5aStimPlant
 
 
@@ -158,7 +159,7 @@ def build_empirical_normalization(
     literal_scale_safe = True
     literal_scale_failure = None
     try:
-        plant.normalized_control_limits(literal_scales)
+        Figure5aBoundedActionAblation(plant).normalized_control_limits(literal_scales)
     except ValueError as exc:
         literal_scale_safe = False
         literal_scale_failure = str(exc)

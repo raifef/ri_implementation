@@ -198,7 +198,8 @@ def test_v15_normalized_safety_envelope_is_phase_independent_and_physical() -> N
     plant = build_plant(_source_config())
     boundary = _boundary(plant)
     limits = normalized_safety_limits(plant, boundary)
-    assert np.all(limits <= plant.control_limits)
+    from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import Figure5aBoundedActionAblation
+    assert np.all(limits <= Figure5aBoundedActionAblation(plant).control_limits)
     for target_sign in (-1.0, 1.0):
         target = boundary.target_to_native(np.full(41, target_sign))
         opposite = apply_safe_control_transform(
@@ -206,7 +207,7 @@ def test_v15_normalized_safety_envelope_is_phase_independent_and_physical() -> N
         native = boundary.apply(opposite).native
         probabilities = plant.probabilities(
             native, 0, 1 / 150, target_controls=target)
-        assert np.all(probabilities < plant.maximum_probability)
+        assert np.all(probabilities < plant.probability_ceilings)
 
 
 def test_source_fidelity_labels_and_frozen_lineage_remain_explicit() -> None:

@@ -20,7 +20,8 @@ from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer im
 from .acquisition import run_cell, substitution_identity
 from .contracts import (AcquisitionMode, Figure5aProtocol, atomic_json, build_source_contract,
                         canonical_hash, file_sha256)
-from .entropy_scan import build_conditions, classify_anchor_rows, scan_contract
+from .entropy_scan import (build_conditions, classify_anchor_rows, reduce_dense_rows,
+                           scan_contract)
 from .gradient_stability import (gradient_stability_conditions, plan_gradient_stability,
                                  run_gradient_stability_condition,
                                  summarize_gradient_stability)
@@ -60,6 +61,17 @@ def _optimizer(config: dict[str, Any]) -> OptimizerConfig:
 
 def _controller_hash(config: dict[str, Any]) -> str:
     return canonical_hash(config["controller"])
+
+
+def _preflight_is_current(
+    preflight: dict[str, Any], config: dict[str, Any], plant_hash: str,
+) -> bool:
+    return bool(
+        preflight.get("pass")
+        and preflight.get("plant_hash") == plant_hash
+        and preflight.get("controller_hash") == _controller_hash(config)
+        and preflight.get("dependencies", {}).get("hashes") == dependency_hashes(ROOT, config)
+    )
 
 
 def _code_hash() -> str:
@@ -122,9 +134,20 @@ def run_condition(config_path: Path, output: Path, *, mode: AcquisitionMode, sca
                 "reference acquisition is blocked until clipping and learning rates are frozen "
                 "from the 50-candidate development ladder")
         preflight_path = output / "preflight.json"
-        if not preflight_path.exists() or not _load(preflight_path)["pass"]:
-            raise RuntimeError("reference acquisition blocked until physical preflight passes")
+        if (not preflight_path.exists()
+                or not _preflight_is_current(_load(preflight_path), config, plant.plant_hash)):
+            raise RuntimeError(
+                "reference acquisition blocked until a current plant-, controller-, and "
+                "dependency-bound physical preflight passes")
         protocol.assert_reference()
+        if scan == "dense":
+            dependency = _anchor_dependency(
+                config, output, mode=mode, protocol=protocol,
+                plant_hash=plant.plant_hash, controller_hash=_controller_hash(config))
+            if not dependency["pass"]:
+                raise RuntimeError(
+                    "reference dense acquisition is blocked until the current-contract "
+                    "reference anchor artifact passes relative, absolute, and sigma-cap gates")
     condition = conditions[condition_index]
     contract = scan_contract(config, mode=mode, scan=scan, protocol=protocol,
                              plant_hash=plant.plant_hash, controller_hash=_controller_hash(config))
@@ -151,6 +174,38 @@ def run_condition(config_path: Path, output: Path, *, mode: AcquisitionMode, sca
     return result
 
 
+def _anchor_dependency(
+    config: dict[str, Any], output: Path, *, mode: AcquisitionMode,
+    protocol: Figure5aProtocol, plant_hash: str, controller_hash: str,
+) -> dict[str, Any]:
+    expected = scan_contract(
+        config, mode=mode, scan="anchors", protocol=protocol,
+        plant_hash=plant_hash, controller_hash=controller_hash)
+    matches = []
+    for path in sorted((output / "iterations").glob("*/merged.json")):
+        value = _load(path)
+        if (value.get("mode") == mode.value and value.get("scan") == "anchors"
+                and value.get("scan_hash") == expected["scan_hash"]):
+            matches.append((path, value))
+    accepted = [item for item in matches if
+                item[1].get("anchor_classification", {}).get("anchor_classification_pass")
+                and item[1].get("mathematical_contract_pass")
+                and item[1].get("artifact_complete")
+                and (mode != AcquisitionMode.REFERENCE
+                     or item[1].get("protocol_contract_pass"))]
+    selected = accepted[-1] if accepted else (matches[-1] if matches else None)
+    return {
+        "pass": bool(accepted),
+        "required_anchor_scan_hash": expected["scan_hash"],
+        "matching_anchor_artifact_count": len(matches),
+        "accepted_anchor_artifact_count": len(accepted),
+        "selected_anchor_artifact": None if selected is None else str(selected[0].resolve()),
+        "selected_anchor_analysis_hash": None if selected is None else selected[1].get("analysis_hash"),
+        "blocking_reasons": [] if accepted else [
+            "no complete current-contract anchor artifact passes relative, absolute, and sigma-cap gates"],
+    }
+
+
 def merge(config_path: Path, output: Path, *, mode: AcquisitionMode, scan: str,
           iteration_id: str) -> dict[str, Any]:
     config = _load(config_path); protocol = _protocol(config, mode); plant = build_plant(config)
@@ -168,24 +223,43 @@ def merge(config_path: Path, output: Path, *, mode: AcquisitionMode, scan: str,
                 for row in contract["conditions"]}
     if set(identities) != expected:
         raise RuntimeError(f"missing or mixed-protocol shards: observed {len(rows)} of {len(expected)}")
-    anchor_classification = classify_anchor_rows(rows, config["anchor"]["classification"]) if scan == "anchors" else None
+    controller_hash = _controller_hash(config)
+    anchor_classification = (classify_anchor_rows(rows, config["anchor"]["classification"])
+                             if scan == "anchors" else None)
+    dense_threshold = (reduce_dense_rows(rows, config["dense_scan"]["classification"])
+                       if scan == "dense" else None)
+    anchor_dependency = (_anchor_dependency(
+        config, output, mode=mode, protocol=protocol, plant_hash=plant.plant_hash,
+        controller_hash=controller_hash) if scan == "dense" else None)
     reference_exact = mode == AcquisitionMode.REFERENCE and all(
         row["candidate_qec_cycles"] == 1_800_000_000 and row["no_candidates_dropped"] for row in rows)
-    quantitative = bool(anchor_classification and anchor_classification["anchor_classification_pass"])
+    quantitative = bool(
+        anchor_classification and anchor_classification["anchor_classification_pass"]
+        if scan == "anchors" else
+        dense_threshold and dense_threshold["dense_acceptance_pass"]
+        and anchor_dependency and anchor_dependency["pass"])
     preflight_path = output / "preflight.json"
     preflight = _load(preflight_path) if preflight_path.exists() else {"pass": False}
-    mathematical_contract = bool(preflight.get("pass"))
+    mathematical_contract = _preflight_is_current(preflight, config, plant.plant_hash)
     blockers = []
     if not reference_exact: blockers.append("exact reference acquisition has not been completed")
-    if scan == "anchors" and not quantitative: blockers.append("the three entropy regimes are not yet correctly ordered across seeds")
-    if scan == "dense": blockers.append("anchor acceptance must precede dense-surface evidence")
+    if scan == "anchors" and not quantitative:
+        blockers.append(
+            "entropy anchors failed relative ordering, absolute performance, or sigma-cap gates")
+    if scan == "dense" and anchor_dependency and not anchor_dependency["pass"]:
+        blockers.extend(anchor_dependency["blocking_reasons"])
+    if scan == "dense" and dense_threshold and not dense_threshold["dense_acceptance_pass"]:
+        blockers.extend(dense_threshold["blocking_reasons"])
     blockers.extend(["epsilon_tilde and Omega distributions are not publicly identifiable",
                      "the original proprietary simulation and optimizer hyperparameters are unavailable"])
-    payload = {"schema_version": "figure5a-merge.v1", "iteration_id": iteration_id,
+    payload = {"schema_version": "figure5a-merge.v2", "iteration_id": iteration_id,
                "mode": mode.value, "scan": scan, "scan_hash": contract["scan_hash"],
                "protocol_hash": protocol.protocol_hash, "plant_hash": plant.plant_hash,
+               "controller_hash": controller_hash,
                "config_hash": file_sha256(config_path), "code_hash": _code_hash(), "rows": rows,
                "anchor_classification": anchor_classification,
+               "anchor_dependency": anchor_dependency,
+               "dense_threshold_analysis": dense_threshold,
                "artifact_complete": True, "mathematical_contract_pass": mathematical_contract,
                "protocol_contract_pass": reference_exact,
                "source_structure_match": mathematical_contract,
@@ -203,8 +277,14 @@ def merge(config_path: Path, output: Path, *, mode: AcquisitionMode, scan: str,
                  "seed_registry_hash": canonical_hash(config["seed_registry"]),
                  "changes_from_previous_iteration": ["implemented 41-control Stim plant, exact budgets, direct-sigma entropy anchors, and candidate-boundary resume"],
                  "failed_gates": blockers, "numerical_results": {"condition_count": len(rows),
-                    "candidate_qec_cycles": payload["candidate_qec_cycles"], "quantitative_match": payload["quantitative_match"]},
-                 "next_diagnosis": ["complete reference anchor cells before launching the dense phase surface"]}
+                    "candidate_qec_cycles": payload["candidate_qec_cycles"],
+                    "quantitative_match": payload["quantitative_match"],
+                    "estimated_steerability_threshold_frequency_per_epoch":
+                        None if dense_threshold is None else dense_threshold[
+                            "estimated_steerability_threshold_frequency_per_epoch"]},
+                 "next_diagnosis": (["complete current-contract reference anchors before dense evidence"]
+                                    if scan == "anchors" and not quantitative else
+                                    ["inspect r_max(f), crossing bracket, and sigma-cap telemetry"])}
     atomic_json(output / "iterations" / iteration_id / "iteration_record.json", iteration)
     atomic_json(output / "final_status.json", payload)
     write_report(payload, output)
@@ -237,6 +317,17 @@ def write_report(payload: dict[str, Any], output: Path) -> None:
              "## Iterations", ""]
     lines.extend(f"- `{record['iteration_id']}`: failed gates `{record['failed_gates']}`; results `{record['numerical_results']}`."
                  for record in records)
+    dense = payload.get("dense_threshold_analysis")
+    if dense is not None:
+        lines.extend([
+            "", "## Dense steerability threshold", "",
+            f"- Dense acceptance: `{dense['dense_acceptance_pass']}`",
+            "- Estimated `r_max(f)=0` frequency per epoch: "
+            f"`{dense['estimated_steerability_threshold_frequency_per_epoch']}`",
+            "- Estimated threshold period in epochs: "
+            f"`{dense['estimated_steerability_threshold_period_epochs']}`",
+            f"- Crossing bracket: `{dense['crossing_bracket_frequency_per_epoch']}`",
+        ])
     if anchor_plan and dense_plan:
         lines.extend(["", "## Preregistered reference cost", "",
                       f"- Anchor scan: `{anchor_plan['condition_count']}` conditions, `{anchor_plan['four_stream_total_qec_cycles']}` four-stream QEC cycles, and a sampling-only lower bound of `{anchor_plan['estimated_sampling_seconds_lower_bound']}` seconds.",

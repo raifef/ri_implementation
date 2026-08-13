@@ -42,7 +42,7 @@ def _phase(epoch: float, frequency: float) -> float:
 
 
 def _beneficial_direction(mean: np.ndarray, epoch: float, frequency: float) -> np.ndarray:
-    target = evaluator().plant.latent_controls_for(
+    target = evaluator().bounded.latent_controls_for(
         np.full(41, math.sin(2.0 * math.pi * frequency * epoch)))
     direction = target - np.asarray(mean, dtype=float)
     norm = float(np.linalg.norm(direction))
@@ -633,7 +633,7 @@ def audit_dynamic_sigma() -> dict[str, Any]:
             entropy = -controller.effective_entropy_coefficient / sigma
             reward = item["loss"].grad_sigma - entropy
             net = item["loss"].grad_sigma
-            target = evaluator().plant.latent_controls_for(
+            target = evaluator().bounded.latent_controls_for(
                 np.full(41, math.sin(2*np.pi*frequency*item["epoch"])))
             rows.append({
                 "epoch": item["epoch"],

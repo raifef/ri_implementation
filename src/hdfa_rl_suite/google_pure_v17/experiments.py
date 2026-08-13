@@ -12,6 +12,7 @@ from typing import Any, Mapping
 import numpy as np
 
 from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import run_cell
+from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import Figure5aBoundedActionAblation
 from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import (
     AcquisitionMode, Figure5aProtocol, ratio_from_raw_counts,
 )
@@ -601,6 +602,7 @@ def audit_scale_dynamics() -> dict[str, Any]:
     verify_import_manifest()
     source_cfg = _source_config()
     plant = build_plant(source_cfg)
+    bounded = Figure5aBoundedActionAblation(plant)
     degrees = plant.mask.sum(axis=0).astype(float)
     coefficients = np.asarray([row.omega_sensitivity for row in plant.inventory]) * degrees
     boundary = SourceNormalizationBoundary.from_training_objective(
@@ -612,7 +614,7 @@ def audit_scale_dynamics() -> dict[str, Any]:
         for record in records:
             sigma_x = np.asarray(record["behavior_sigma"], dtype=float)
             mean_x = np.asarray(record["latent_behavior_mean"], dtype=float)
-            derivative = 1.0 / np.cosh(mean_x / plant.control_limits) ** 2
+            derivative = 1.0 / np.cosh(mean_x / bounded.control_limits) ** 2
             sigma_u = boundary.native_scale * derivative * sigma_x
             rewards = -np.asarray(record["stochastic_detector_counts"], dtype=float).sum(axis=1) / (
                 record["qec_cycles_per_candidate"] / plant.rounds)

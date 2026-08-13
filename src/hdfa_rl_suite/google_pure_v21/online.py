@@ -8,6 +8,7 @@ import time
 from typing import Any, Mapping
 
 import numpy as np
+from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import Figure5aBoundedActionAblation
 
 from hdfa_rl_suite.google_pure_v20.core import cosine_alignment
 from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import (
@@ -132,14 +133,8 @@ def _atomic(path: Path, value: Mapping[str, Any]) -> None:
 
 def normalized_safety_limits(plant: Any, boundary: Any) -> np.ndarray:
     """Static normalized limits safe for every public target in [-1, 1]."""
-    irreducible = np.asarray([item.irreducible_error for item in plant.inventory])
-    omega = np.asarray([item.omega_sensitivity for item in plant.inventory])
-    ceiling = plant.maximum_probability * (1.0 - plant.action_probability_margin_fraction)
-    maximum_native_delta = np.sqrt((ceiling - irreducible) / omega)
-    # Origin cancels in policy-target differences.  Reserving one normalized
-    # target unit makes this bound independent of the current target/phase.
-    boundary_safe = maximum_native_delta / boundary.native_scale - 1.0
-    limits = np.minimum(np.asarray(plant.control_limits, dtype=float), boundary_safe)
+    limits = Figure5aBoundedActionAblation(plant).normalized_control_limits(
+        boundary.native_scale)
     if np.any(limits <= 1.0) or not np.all(np.isfinite(limits)):
         raise RuntimeError("V21 plant has no phase-independent normalized safety envelope")
     return limits

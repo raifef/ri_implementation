@@ -146,11 +146,17 @@ class DirectSigmaOptimizer:
         else:
             raise ValueError(f"unsupported positivity guard: {cfg.positivity_guard}")
         proposed_sigma = np.minimum(proposed_sigma, cfg.maximum_sigma)
+        fraction_at_sigma_min = float(np.mean(proposed_sigma <= cfg.minimum_sigma))
+        fraction_at_sigma_max = float(np.mean(proposed_sigma >= cfg.maximum_sigma))
         mean[:] = proposed_mean
         sigma[:] = proposed_sigma
         baseline[:] = np.asarray(baseline) - cfg.baseline_learning_rate * self.baseline_velocity
         self.steps += 1
-        return {"fraction_at_positivity_guard": float(np.mean(proposed_sigma <= cfg.minimum_sigma)),
+        return {"fraction_at_positivity_guard": fraction_at_sigma_min,
+                "fraction_at_sigma_min": fraction_at_sigma_min,
+                "fraction_at_sigma_max": fraction_at_sigma_max,
+                "unclipped_sigma_min": float(np.min(raw_sigma)),
+                "unclipped_sigma_max": float(np.max(raw_sigma)),
                 "backtracks": backtracks, "optimized_scale_variable": "sigma",
                 **clipping_diagnostics}
 

@@ -6,7 +6,12 @@
   },
   "ablations": {
     "empirical_relative_normalization_bundle": "configs/google_pure_source_exact/figure5a_normalization.json",
-    "empirical_relative_normalization_status": "NONCANONICAL_CONDITIONING_ABLATION"
+    "empirical_relative_normalization_status": "NONCANONICAL_CONDITIONING_ABLATION",
+    "bounded_action": {
+      "scientific_status": "NONCANONICAL_LEGACY_SCALED_TANH_ABLATION",
+      "maximum_probability": 0.49,
+      "action_probability_margin_fraction": 0.000001
+    }
   },
   "plant": {
     "distance": 3,
@@ -17,8 +22,6 @@
     "two_qubit_irreducible": [0.001, 0.003],
     "one_qubit_omega": [0.002, 0.006],
     "two_qubit_omega": [0.004, 0.012],
-    "maximum_probability": 0.49,
-    "action_probability_margin_fraction": 0.000001,
     "ensemble_source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED",
     "gate_site_injection_mapping_source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED",
     "circuit_rounds_source_identifiability": "SOURCE_UNSPECIFIED_PRIMARY_CLEAN_ROOM_CHOICE",
@@ -35,6 +38,8 @@
     "ppo_clip": 0.2,
     "minimum_sigma": 0.002,
     "maximum_sigma": 0.8,
+    "maximum_sigma_source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED_NUISANCE",
+    "maximum_sigma_interpretation": "A numerical stabilization ceiling, not a source-established policy bound. Anchor acceptance fails when more than the preregistered fraction of coordinates contact it.",
     "positivity_guard": "projected_gradient",
     "gradient_clipping": {
       "selected_mode": "global_l2",
@@ -102,12 +107,24 @@
       "minimum_entropy_separation": 0.05,
       "minimum_high_exploration_gap": 0.02,
       "minimum_low_tracking_gap": 0.02,
-      "middle_must_maximize_stochastic_ratio": true
+      "middle_must_maximize_stochastic_ratio": true,
+      "minimum_middle_stochastic_ratio": 0.5,
+      "minimum_high_learned_mean_ratio": 0.0,
+      "maximum_sigma_cap_fraction": 0.01,
+      "absolute_threshold_scientific_status": "PREREGISTERED_CLEAN_ROOM_NOT_SOURCE_NUMERICAL_VALUE"
     }
   },
   "dense_scan": {
     "frequencies": [0.0005, 0.001, 0.002, 0.0033333333333333335, 0.005, 0.006666666666666667, 0.01, 0.013333333333333334, 0.02],
-    "entropy_weights": [0.001, 0.0017782794100389228, 0.0031622776601683794, 0.005623413251903491, 0.01, 0.01778279410038923, 0.03162277660168379, 0.05623413251903491, 0.1]
+    "entropy_weights": [0.001, 0.0017782794100389228, 0.0031622776601683794, 0.005623413251903491, 0.01, 0.01778279410038923, 0.03162277660168379, 0.05623413251903491, 0.1],
+    "classification": {
+      "source_threshold_frequency_per_epoch": 0.006666666666666667,
+      "maximum_absolute_threshold_error_per_epoch": 0.0035,
+      "minimum_low_frequency_r_max": 0.0,
+      "maximum_high_frequency_r_max": 0.0,
+      "require_contiguous_positive_region": true,
+      "scientific_status": "PREREGISTERED_CLEAN_ROOM_REDUCER_AGAINST_SOURCE_APPROXIMATE_1_OVER_150_ORDER"
+    }
   },
   "seed_registry": {
     "development": [53101, 53201, 53202, 53203, 53301, 53302, 53303],

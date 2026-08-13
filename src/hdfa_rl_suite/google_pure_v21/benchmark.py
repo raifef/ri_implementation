@@ -179,8 +179,9 @@ def _metric_row(estimate: np.ndarray, reference: np.ndarray, beneficial: np.ndar
 
 
 def _bound_occupancy(actions: np.ndarray) -> float:
-    normalized = evaluator().plant.apply_control_transform(actions)
-    ratio = np.abs(normalized / evaluator().plant.control_limits[None, :])
+    evaluation = evaluator()
+    normalized = evaluation.bounded.apply_control_transform(actions)
+    ratio = np.abs(normalized / evaluation.bounded.control_limits[None, :])
     return float(np.mean(ratio >= .99))
 
 

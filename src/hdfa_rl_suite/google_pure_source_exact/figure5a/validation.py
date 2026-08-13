@@ -8,6 +8,7 @@ from typing import Any, Mapping
 import numpy as np
 
 from .contracts import canonical_hash, file_sha256
+from .bounded_action_ablation import Figure5aBoundedActionAblation
 from .plant import Figure5aStimPlant
 from .normalization import Figure5aEmpiricalBoundary, reward_representation_hash
 
@@ -22,9 +23,7 @@ def build_plant(config: Mapping[str, Any]) -> Figure5aStimPlant:
         one_qubit_irreducible=tuple(value["one_qubit_irreducible"]),
         two_qubit_irreducible=tuple(value["two_qubit_irreducible"]),
         one_qubit_omega=tuple(value["one_qubit_omega"]),
-        two_qubit_omega=tuple(value["two_qubit_omega"]),
-        maximum_probability=float(value["maximum_probability"]),
-        action_probability_margin_fraction=float(value["action_probability_margin_fraction"]))
+        two_qubit_omega=tuple(value["two_qubit_omega"]))
 
 
 def dependency_hashes(root: Path, config: Mapping[str, Any]) -> dict[str, str]:
@@ -52,6 +51,11 @@ def validate_dependencies(root: Path, config: Mapping[str, Any]) -> dict[str, An
     try:
         normalization = json.loads(ablation_path.read_text(encoding="utf-8"))
         boundary = Figure5aEmpiricalBoundary.from_artifact(plant, normalization)
+        bounded = Figure5aBoundedActionAblation(
+            plant, maximum_probability=float(
+                config["ablations"]["bounded_action"]["maximum_probability"]),
+            action_probability_margin_fraction=float(
+                config["ablations"]["bounded_action"]["action_probability_margin_fraction"]))
         ablation_gates = {
             "bound_to_exact_plant": normalization["plant_hash"] == plant.plant_hash,
             "bound_to_reduced_reward":
@@ -66,7 +70,7 @@ def validate_dependencies(root: Path, config: Mapping[str, Any]) -> dict[str, An
                 config["ablations"]["empirical_relative_normalization_status"] ==
                 "NONCANONICAL_CONDITIONING_ABLATION",
             "bounded_ablation_domain_safe": bool(
-                np.all(plant.normalized_control_limits(boundary.native_scale) > 1.0)),
+                np.all(bounded.normalized_control_limits(boundary.native_scale) > 1.0)),
         }
         ablation = {"pass": all(ablation_gates.values()), "path": str(ablation_path),
                     "gates": ablation_gates, "calibration_hash": boundary.calibration_hash,
@@ -138,9 +142,6 @@ def physical_preflight(root: Path, config: Mapping[str, Any], *, finite_shot_cyc
     single_full = plant.sample_detector_observation(
         full, epoch=0, frequency=1 / 1000,
         qec_cycles=finite_shot_cycles, seed=single_gate_seed)
-    sigma_envelope = 6.0 * float(config["controller"]["maximum_sigma"])
-    positive_target = plant.optimum(250, 1 / 1000)
-    negative_target = plant.optimum(750, 1 / 1000)
     gates = {
         "exactly_17_one_qubit_controls": one_count == 17,
         "exactly_24_two_qubit_controls": two_count == 24,
@@ -156,7 +157,7 @@ def physical_preflight(root: Path, config: Mapping[str, Any], *, finite_shot_cyc
         "detector_class_exact_marginal_equivalence": equivalence["pass"],
         "detector_class_reduction_nonvacuous": equivalence["multi_detector_class_count"] > 0,
         "physical_probabilities": bool(np.all(plant.probabilities(np.full(41, 2.0), 0, 1 / 1000)
-                                               < float(config["plant"]["maximum_probability"]))),
+                                               < plant.probability_ceilings)),
         "canonical_action_is_identity":
             config["controller"].get("action_execution", {}).get("transform") ==
             "identity",
@@ -175,13 +176,6 @@ def physical_preflight(root: Path, config: Mapping[str, Any], *, finite_shot_cyc
             config["controller"].get("action_execution", {}).get("uses_hidden_optimum") is False,
         "published_peak_optimum_is_literal_one_vector":
             np.array_equal(oracle, np.ones(plant.control_count)),
-        "six_sigma_development_envelope_is_physical": bool(
-            np.all(plant.probabilities(
-                positive_target + sigma_envelope, 250, 1 / 1000,
-                target_controls=positive_target) < plant.maximum_probability) and
-            np.all(plant.probabilities(
-                negative_target - sigma_envelope, 750, 1 / 1000,
-                target_controls=negative_target) < plant.maximum_probability)),
         "oracle_better_than_fixed_finite_shot": oracle_observation.raw_total < fixed_observation.raw_total,
         "single_gate_measured_curvature_positive": single_full.raw_total > single_baseline.raw_total,
         "dependencies_valid": dependencies["pass"],
@@ -189,6 +183,7 @@ def physical_preflight(root: Path, config: Mapping[str, Any], *, finite_shot_cyc
     gates = {name: bool(value) for name, value in gates.items()}
     result = {"schema_version": "figure5a-physical-preflight.v1", "pass": all(gates.values()),
               "gates": gates, "plant_hash": plant.plant_hash, "control_count": plant.control_count,
+              "controller_hash": canonical_hash(config["controller"]),
               "detector_count": plant.detector_count, "raw_detector_count": plant.raw_detector_count,
               "mask_density": float(plant.mask.mean()),
               "finite_shot_cycles_per_policy": finite_shot_cycles,
@@ -204,6 +199,7 @@ def physical_preflight(root: Path, config: Mapping[str, Any], *, finite_shot_cyc
               "detector_equivalence_response_audit": equivalence,
               "action_execution": "identity_applied_gaussian",
               "coordinate_contract": "SOURCE_GAUSSIAN_P_EQUALS_APPLIED_PLANT_P_V1",
-              "six_sigma_policy_envelope": sigma_envelope,
+              "action_physicality_contract":
+                  "validate each actually encountered applied action against its Stim channel ceiling",
               "blocking_reasons": [name for name, value in gates.items() if not value]}
     return result

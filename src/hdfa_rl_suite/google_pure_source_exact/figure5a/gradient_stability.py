@@ -204,6 +204,10 @@ def run_gradient_stability_condition(
             "gradient_clipping": {key: update[key] for key in update if key.startswith("gradient_")
                                   or key.startswith("raw_") or key.startswith("applied_")},
             "fraction_at_positivity_guard": update["fraction_at_positivity_guard"],
+            "fraction_at_sigma_min": update["fraction_at_sigma_min"],
+            "fraction_at_sigma_max": update["fraction_at_sigma_max"],
+            "unclipped_sigma_min": update["unclipped_sigma_min"],
+            "unclipped_sigma_max": update["unclipped_sigma_max"],
         }
         state["records"].append(record)
         state["next_epoch"] = epoch + 1
@@ -232,6 +236,14 @@ def run_gradient_stability_condition(
                 row["gradient_clipping"]["gradient_global_clip_scale"] < 1.0 or
                 row["gradient_clipping"]["gradient_clipped_component_count"] > 0
                 for row in records])),
+            "maximum_epoch_sigma_min_fraction": float(max(
+                row["fraction_at_sigma_min"] for row in records)),
+            "maximum_epoch_sigma_max_fraction": float(max(
+                row["fraction_at_sigma_max"] for row in records)),
+            "minimum_unclipped_sigma": float(min(
+                row["unclipped_sigma_min"] for row in records)),
+            "maximum_unclipped_sigma": float(max(
+                row["unclipped_sigma_max"] for row in records)),
             "final_step_mean_r": records[-1]["post_update_mean_r"],
             "final_mean_sigma": records[-1]["post_update_mean_sigma"],
             "candidate_qec_cycles": sum(row["candidate_qec_cycles"] for row in records),

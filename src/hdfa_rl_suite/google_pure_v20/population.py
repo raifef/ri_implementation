@@ -67,12 +67,12 @@ def run_population_gradient_fast() -> dict[str, Any]:
     mean = np.zeros(41, dtype=float)
     rows = []
     for epoch in range(epochs_total):
-        normalized = evaluation.plant.apply_control_transform(mean)
+        normalized = evaluation.bounded.apply_control_transform(mean)
         target = evaluation.plant.optimum(epoch, frequency)
         phase_distance = np.abs((phase_epochs % period) - epoch % period)
         phase_distance = np.minimum(phase_distance, period - phase_distance)
         hessian = phase_hessians[int(np.argmin(phase_distance))]
-        transform_jacobian = 1.0 - np.tanh(mean / evaluation.plant.control_limits)**2
+        transform_jacobian = 1.0 - np.tanh(mean / evaluation.bounded.control_limits)**2
         gradient = 2.0 * hessian * (normalized - target) * transform_jacobian
         sigma = np.asarray(run["records"][epoch]["behavior_sigma"], dtype=float)
         noises = run["noises"][epoch]

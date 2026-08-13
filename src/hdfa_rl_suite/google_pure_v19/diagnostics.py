@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 import numpy as np
+from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import Figure5aBoundedActionAblation
 
 from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import canonical_hash as shard_hash
 from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_plant
@@ -218,11 +219,12 @@ class _ExactDetectorEvaluator:
 
     def __init__(self) -> None:
         self.plant = build_plant(_source_config())
+        self.bounded = Figure5aBoundedActionAblation(self.plant)
         self.boundary = _boundary(self.plant)
         self.cache: dict[tuple[int, float, bytes], float] = {}
 
     def native(self, latent: np.ndarray) -> np.ndarray:
-        normalized = self.plant.apply_control_transform(np.asarray(latent, dtype=float))
+        normalized = self.bounded.apply_control_transform(np.asarray(latent, dtype=float))
         return self.boundary.apply(normalized).native
 
     def cost(self, latent: np.ndarray, epoch: int, frequency: float) -> float:
@@ -883,7 +885,7 @@ def run_frozen_sigma_sweep() -> dict[str, Any]:
             sigma = np.asarray(record["behavior_sigma"], dtype=float)
             noise = run["noises"][epoch]
             mean_cost = evaluator.cost(mean, epoch, frequency)
-            target_latent = evaluator.plant.latent_controls_for(
+            target_latent = evaluator.bounded.latent_controls_for(
                 evaluator.plant.optimum(epoch, frequency))
             optimal_cost = evaluator.cost(target_latent, epoch, frequency)
             fixed_cost = evaluator.cost(np.zeros_like(mean), epoch, frequency)

@@ -21,8 +21,6 @@ def _figure5a_plant() -> Figure5aStimPlant:
         two_qubit_irreducible=tuple(value["two_qubit_irreducible"]),
         one_qubit_omega=tuple(value["one_qubit_omega"]),
         two_qubit_omega=tuple(value["two_qubit_omega"]),
-        maximum_probability=float(value["maximum_probability"]),
-        action_probability_margin_fraction=float(value["action_probability_margin_fraction"]),
     )
 
 

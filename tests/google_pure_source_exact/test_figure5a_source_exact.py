@@ -12,6 +12,9 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.acquisition import (
     source_controls_for_epoch,
     substitution_identity,
 )
+from hdfa_rl_suite.google_pure_source_exact.figure5a.bounded_action_ablation import (
+    Figure5aBoundedActionAblation,
+)
 from hdfa_rl_suite.google_pure_source_exact.figure5a.cli import plan
 from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import (
     AcquisitionMode,
@@ -24,6 +27,7 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.contracts import (
 from hdfa_rl_suite.google_pure_source_exact.figure5a.entropy_scan import (
     build_conditions,
     classify_anchor_rows,
+    reduce_dense_rows,
     scan_contract,
 )
 from hdfa_rl_suite.google_pure_source_exact.figure5a.gradient_stability import (
@@ -42,7 +46,10 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import (
 )
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.gaussian import DirectSigmaGaussianPolicy
 from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.losses import total_loss_and_gradients
-from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import OptimizerConfig
+from hdfa_rl_suite.google_pure_source_exact.policy_parameterization.optimizer import (
+    DirectSigmaOptimizer,
+    OptimizerConfig,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -152,22 +159,39 @@ def test_shared_optimum_quadratic_error_and_physical_probabilities(plant) -> Non
                           0.25 * item.omega_sensitivity)
         assert np.isclose(plant.probabilities(full, 0, 1 / 1000)[index] - baseline[index],
                           item.omega_sensitivity)
-    assert np.all(plant.probabilities(np.full(41, 2.0), 0, 1 / 1000) < plant.maximum_probability)
+    assert np.all(plant.probabilities(np.full(41, 2.0), 0, 1 / 1000) <
+                  plant.probability_ceilings)
 
 
 def test_bounded_transform_is_retained_only_as_a_separate_ablation(plant) -> None:
+    bounded = Figure5aBoundedActionAblation(plant)
     latent = np.linspace(-2.75, 2.75, 41)
-    applied = plant.apply_control_transform(latent)
-    np.testing.assert_allclose(plant.latent_controls_for(applied), latent, rtol=1e-12, atol=1e-12)
-    assert np.all(np.abs(applied) < plant.control_limits)
-    assert np.all(plant.control_limits > 1.0)
+    applied = bounded.apply_control_transform(latent)
+    np.testing.assert_allclose(
+        bounded.latent_controls_for(applied), latent, rtol=1e-12, atol=1e-12)
+    assert np.all(np.abs(applied) < bounded.control_limits)
+    assert np.all(bounded.control_limits > 1.0)
+    assert not hasattr(plant, "control_limits")
+    assert not hasattr(plant, "apply_control_transform")
 
-    positive_extreme = plant.apply_control_transform(np.full(41, 1e6))
-    negative_extreme = plant.apply_control_transform(np.full(41, -1e6))
+    positive_extreme = bounded.apply_control_transform(np.full(41, 1e6))
+    negative_extreme = bounded.apply_control_transform(np.full(41, -1e6))
     assert np.all(plant.probabilities(positive_extreme, 750, 1 / 1000) <
-                  plant.maximum_probability)
+                  plant.probability_ceilings)
     assert np.all(plant.probabilities(negative_extreme, 250, 1 / 1000) <
-                  plant.maximum_probability)
+                  plant.probability_ceilings)
+
+
+def test_canonical_plant_constructs_without_a_global_bounded_action_domain(config) -> None:
+    high_curvature = json.loads(json.dumps(config))
+    high_curvature["plant"]["one_qubit_omega"] = [0.2, 0.3]
+    high_curvature["plant"]["two_qubit_omega"] = [0.2, 0.3]
+    candidate = build_plant(high_curvature)
+    assert candidate.control_count == 41
+    with pytest.raises(ValueError, match="bounded-action ablation"):
+        Figure5aBoundedActionAblation(candidate)
+    with pytest.raises(ValueError, match="left the frozen physical range"):
+        candidate.probabilities(np.full(41, 2.0), 0, 1 / 1000)
 
 
 def test_canonical_acquisition_uses_literal_source_optimum_and_gaussian_actions(plant) -> None:
@@ -250,7 +274,7 @@ def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plan
     assert boundary_resumed["epoch_records"] == mono["epoch_records"]
     assert resumed["no_candidates_dropped"]
     assert resumed["candidate_boundaries_completed"] == 6
-    assert resumed["schema_version"] == "figure5a-cell.v5"
+    assert resumed["schema_version"] == "figure5a-cell.v6"
     assert resumed["raw_detector_count"] > resumed["detector_count"]
     assert resumed["reward_representation"] == "time_translation_equivalence_class_mean_edr"
     assert resumed["gradient_clipping_contract"]["applied_before_momentum"]
@@ -281,6 +305,9 @@ def test_candidate_boundary_resume_is_bit_exact_and_drops_nothing(tmp_path, plan
     assert all(record["optimum"] == plant.optimum(record["epoch"], 0.1)[0]
                for record in resumed["epoch_records"])
     assert all(record["gradient_clipping"]["gradient_clipping_mode"] == "none"
+               for record in resumed["epoch_records"])
+    assert all(set(("fraction_at_sigma_min", "fraction_at_sigma_max",
+                    "unclipped_sigma_min", "unclipped_sigma_max")) <= set(record)
                for record in resumed["epoch_records"])
 
     obsolete = json.loads((tmp_path / "mono.json").read_text(encoding="utf-8"))
@@ -370,12 +397,16 @@ def test_anchor_classification_is_quantitative_and_seed_stable() -> None:
                                                   (0.01, -3.0, 0.8, 0.85),
                                                   (0.1, -1.0, 0.3, 0.9)):
             rows.append({"seed": seed, "entropy_weight": weight,
-                         "epoch_records": [{"policy_entropy": ent}],
+                         "epoch_records": [{"policy_entropy": ent,
+                                            "fraction_at_sigma_max": 0.0}],
                          "stochastic_ratio": {"source_ratio": stochastic},
                          "learned_mean_ratio": {"source_ratio": learned}})
     result = classify_anchor_rows(rows, {"minimum_entropy_separation": 0.05,
         "minimum_high_exploration_gap": 0.02, "minimum_low_tracking_gap": 0.02,
-        "middle_must_maximize_stochastic_ratio": True})
+        "middle_must_maximize_stochastic_ratio": True,
+        "minimum_middle_stochastic_ratio": 0.5,
+        "minimum_high_learned_mean_ratio": 0.0,
+        "maximum_sigma_cap_fraction": 0.01})
     assert result["anchor_classification_pass"] and result["stable_over_seeds"]
 
 
@@ -383,14 +414,91 @@ def test_anchor_classification_fails_closed_on_zero_denominator() -> None:
     rows = []
     for weight in SOURCE_ENTROPY_ANCHORS:
         rows.append({"seed": 1, "entropy_weight": weight,
-                     "epoch_records": [{"policy_entropy": float(weight)}],
+                     "epoch_records": [{"policy_entropy": float(weight),
+                                        "fraction_at_sigma_max": 0.0}],
                      "stochastic_ratio": {"source_ratio": None},
                      "learned_mean_ratio": {"source_ratio": None}})
     result = classify_anchor_rows(rows, {"minimum_entropy_separation": 0.05,
         "minimum_high_exploration_gap": 0.02, "minimum_low_tracking_gap": 0.02,
-        "middle_must_maximize_stochastic_ratio": True})
+        "middle_must_maximize_stochastic_ratio": True,
+        "minimum_middle_stochastic_ratio": 0.5,
+        "minimum_high_learned_mean_ratio": 0.0,
+        "maximum_sigma_cap_fraction": 0.01})
     assert not result["anchor_classification_pass"]
     assert "zero finite-shot" in result["seed_rows"][0]["blocking_reasons"][0]
+
+
+def test_anchor_absolute_gates_reject_ordered_but_objectively_bad_controller(config) -> None:
+    rows = []
+    for weight, entropy, stochastic, learned in (
+            (0.001, -5.0, -2.0, -1.5),
+            (0.01, -3.0, -1.0, -0.8),
+            (0.1, -1.0, -1.5, 0.1)):
+        rows.append({
+            "seed": 1, "entropy_weight": weight,
+            "epoch_records": [{"policy_entropy": entropy, "fraction_at_sigma_max": 0.0}],
+            "stochastic_ratio": {"source_ratio": stochastic},
+            "learned_mean_ratio": {"source_ratio": learned},
+        })
+    result = classify_anchor_rows(rows, config["anchor"]["classification"])
+    assert not result["anchor_classification_pass"]
+    assert "middle_stochastic_absolute_advantage" in \
+        result["seed_rows"][0]["blocking_reasons"]
+
+
+def test_anchor_sigma_cap_contact_fails_closed(config) -> None:
+    rows = []
+    for weight, entropy, stochastic, learned in (
+            (0.001, -5.0, 0.1, 0.2),
+            (0.01, -3.0, 0.8, 0.85),
+            (0.1, -1.0, 0.3, 0.9)):
+        rows.append({
+            "seed": 1, "entropy_weight": weight,
+            "epoch_records": [{"policy_entropy": entropy,
+                               "fraction_at_sigma_max": 0.05 if weight == 0.1 else 0.0}],
+            "stochastic_ratio": {"source_ratio": stochastic},
+            "learned_mean_ratio": {"source_ratio": learned},
+        })
+    result = classify_anchor_rows(rows, config["anchor"]["classification"])
+    assert not result["anchor_classification_pass"]
+    assert "sigma_cap_not_dominant" in result["seed_rows"][0]["blocking_reasons"]
+
+
+def test_dense_reducer_extracts_rmax_surface_and_zero_crossing(config) -> None:
+    rows = []
+    values = {
+        0.001: {0.001: 0.4, 0.01: 0.7},
+        0.006: {0.001: 0.1, 0.01: 0.2},
+        0.010: {0.001: -0.2, 0.01: -0.1},
+    }
+    for frequency, entropy_rows in values.items():
+        for entropy_weight, stochastic in entropy_rows.items():
+            for seed in (1, 2):
+                rows.append({
+                    "frequency": frequency, "entropy_weight": entropy_weight, "seed": seed,
+                    "stochastic_ratio": {"source_ratio": stochastic},
+                    "learned_mean_ratio": {"source_ratio": stochastic + 0.1},
+                })
+    result = reduce_dense_rows(rows, config["dense_scan"]["classification"])
+    assert result["dense_acceptance_pass"]
+    assert [row["r_max"] for row in result["stochastic_r_max_envelope"]] == [0.7, 0.2, -0.1]
+    assert result["crossing_bracket_frequency_per_epoch"] == [0.006, 0.01]
+    assert result["estimated_steerability_threshold_frequency_per_epoch"] == \
+        pytest.approx(0.008666666666666666)
+
+
+def test_optimizer_reports_both_sigma_bounds_and_unclipped_extrema() -> None:
+    mean = np.zeros(2)
+    sigma = np.asarray([0.79, 0.01])
+    baseline = np.zeros(1)
+    optimizer = DirectSigmaOptimizer(
+        2, 1, OptimizerConfig(0.1, 0.1, 0.1, minimum_sigma=0.002, maximum_sigma=0.8))
+    update = optimizer.step(
+        mean, sigma, baseline, np.zeros(2), np.asarray([-1.0, 1.0]), np.zeros(1))
+    assert update["unclipped_sigma_max"] == pytest.approx(0.89)
+    assert update["unclipped_sigma_min"] == pytest.approx(-0.09)
+    assert update["fraction_at_sigma_max"] == 0.5
+    assert update["fraction_at_sigma_min"] == 0.5
 
 
 def test_reference_planner_reports_exact_cost(config, tmp_path) -> None:
