@@ -75,6 +75,25 @@ def test_mode_mixing_and_wrong_family_merge_fail() -> None:
         assert_merge_compatible([first, second])
 
 
+def test_merge_compatibility_allows_mixed_per_shard_freshness() -> None:
+    common = {
+        "experiment_family": "FIGURE5A_REAL_TIME_STEERING",
+        "protocol_hash": "p",
+        "controller_hash": "c",
+        "plant_hash": "q",
+        "graph_hash": "g",
+        "mode": "validation",
+        "reused_shard_ids": [],
+    }
+    fresh = {"provenance": {**common, "fresh_acquisition": True}}
+    resumed = {"provenance": {**common, "fresh_acquisition": False}}
+
+    # Freshness is per-shard acquisition provenance, not an experiment identity.
+    # The merge layer combines it conservatively with all(...) and still rejects
+    # any non-fresh evidence when the frozen protocol explicitly requires fresh data.
+    assert_merge_compatible([fresh, resumed])
+
+
 def test_smoke_and_validation_can_never_be_final() -> None:
     assert not final_evidence_allowed(mode="smoke", complete=True, scientifically_valid=True)
     assert not final_evidence_allowed(mode="validation", complete=True, scientifically_valid=True)

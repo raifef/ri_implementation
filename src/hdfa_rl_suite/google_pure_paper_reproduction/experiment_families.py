@@ -77,7 +77,7 @@ def assert_merge_compatible(records: Iterable[Mapping[str, Any]]) -> None:
             "boundary_transform_name", "boundary_apply_count", "experiment_driver_hash",
             "coordinate_contract", "action_execution", "plant_boundary_execution",
             "likelihood_space", "entropy_space", "empirical_relative_normalization_applied",
-            "mean_bounds_applied", "source_budget_profile", "fresh_acquisition")
+            "mean_bounds_applied", "source_budget_profile")
     for key in keys:
         values = {row["provenance"].get(key) for row in rows}
         if len(values) != 1:
