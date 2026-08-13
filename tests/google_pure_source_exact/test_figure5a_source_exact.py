@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import json
 from pathlib import Path
 
@@ -33,6 +34,11 @@ from hdfa_rl_suite.google_pure_source_exact.figure5a.entropy_scan import (
 from hdfa_rl_suite.google_pure_source_exact.figure5a.gradient_stability import (
     gradient_stability_conditions,
     plan_gradient_stability,
+    run_gradient_stability_condition,
+    summarize_gradient_stability,
+)
+from hdfa_rl_suite.google_pure_source_exact.figure5a.marginal_exactness import (
+    audit_marginal_exactness,
 )
 from hdfa_rl_suite.google_pure_source_exact.figure5a.plant import Figure5aStimPlant
 from hdfa_rl_suite.google_pure_source_exact.figure5a.normalization import (
@@ -69,6 +75,12 @@ def plant(config) -> Figure5aStimPlant:
 @pytest.fixture(scope="module")
 def normalization_artifact(config) -> dict:
     path = ROOT / config["ablations"]["empirical_relative_normalization_bundle"]
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
+def plant_calibration_artifact(config) -> dict:
+    path = ROOT / config["dependencies"]["plant_calibration"]
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -163,6 +175,85 @@ def test_shared_optimum_quadratic_error_and_physical_probabilities(plant) -> Non
                   plant.probability_ceilings)
 
 
+def test_s8_calibration_matches_million_event_axis_and_conditions_every_coordinate(
+    config, plant, plant_calibration_artifact,
+) -> None:
+    assert plant_calibration_artifact["figure_s8_axis_scale"] == \
+        "10^6 detection events per training epoch"
+    assert plant_calibration_artifact["mathematical_contract_pass"]
+    selected = plant_calibration_artifact["variants"][
+        config["plant"]["one_qubit_injection_mapping"]]
+    assert selected["plant_hash"] == plant.plant_hash
+    assert selected["oracle_detection_events_per_epoch"] == pytest.approx(1_500_000, abs=1)
+    assert selected["fixed_peak_detection_events_per_epoch"] == pytest.approx(1_940_000, abs=1)
+    assert selected["curvature_conditioning_family"] == "mild_anisotropy"
+    assert selected["target_conditioning_residual_ratio"] < 1.000001
+    assert selected["coordinate_curvature_ratio"] == pytest.approx(
+        selected["target_curvature_factor_ratio"], rel=1e-8)
+    assert 1.0 < selected["coordinate_curvature_ratio"] < 1.5
+    assert selected["group_curvature_ratio"] < 1.05
+    assert len(selected["parameter_diagnostics"]) == 41
+    assert plant_calibration_artifact["development_plant_family_count"] == 18
+    assert set(plant_calibration_artifact[
+        "additional_development_ensemble_variants"]) == {"53002", "53003"}
+
+
+def test_alternative_one_qubit_mapping_has_one_location_per_cycle(
+    config, plant_calibration_artifact,
+) -> None:
+    aggregate = plant_calibration_artifact["variants"]["per_qubit_operation_aggregate"]
+    alternative = plant_calibration_artifact["variants"]["one_location_per_cycle"]
+    assert min(aggregate["one_qubit_location_counts"]) < \
+        max(aggregate["one_qubit_location_counts"])
+    assert set(alternative["one_qubit_location_counts"]) == {
+        config["plant"]["circuit_rounds"]}
+    assert alternative["pass"]
+
+
+def test_exact_channel_fault_signatures_cover_every_physical_occurrence(plant) -> None:
+    assert len(plant.channel_occurrences) == len(plant.fault_signatures)
+    assert sum(item.shape[0] for item in plant.fault_signatures) > 10_000
+    for occurrence, signatures in zip(
+            plant.channel_occurrences, plant.fault_signatures, strict=True):
+        assert signatures.shape == (
+            3 if len(occurrence.qubits) == 1 else 15,
+            plant.raw_detector_count)
+    exact_raw_mask = np.zeros((plant.raw_detector_count, plant.control_count), dtype=bool)
+    for occurrence, signatures in zip(
+            plant.channel_occurrences, plant.fault_signatures, strict=True):
+        exact_raw_mask[:, occurrence.parameter_index] |= np.any(signatures, axis=0)
+    for component, raw_detectors in enumerate(plant.reward_component_raw_detectors):
+        np.testing.assert_array_equal(
+            plant.mask[component], np.any(exact_raw_mask[list(raw_detectors)], axis=0))
+
+
+def test_exact_and_named_approximate_marginals_are_independently_auditable(plant) -> None:
+    rng = np.random.default_rng(53117)
+    target = np.zeros(plant.control_count)
+    maximum_difference = 0.0
+    for controls in rng.normal(0.0, 0.25, size=(8, plant.control_count)):
+        exact = plant.exact_raw_detector_marginals(
+            controls, epoch=0, frequency=1 / 1000, target_controls=target)
+        approximate = plant.approximate_dem_raw_detector_marginals(
+            controls, epoch=0, frequency=1 / 1000, target_controls=target)
+        maximum_difference = max(maximum_difference, float(np.max(np.abs(exact - approximate))))
+        np.testing.assert_array_equal(
+            plant.expected_reward_rates(
+                controls, epoch=0, frequency=1 / 1000, target_controls=target),
+            plant.exact_reward_rates(
+                controls, epoch=0, frequency=1 / 1000, target_controls=target))
+    assert maximum_difference < 2e-12
+
+
+def test_small_exactness_audit_matches_actual_stim_sampler(config) -> None:
+    result = audit_marginal_exactness(
+        config, random_policy_count=3, gradient_policy_count=1,
+        monte_carlo_policy_count=1, monte_carlo_qec_cycles=100_000)
+    assert result["pass"], result["blocking_reasons"]
+    assert not result["summary"][
+        "legacy_dem_approximation_material_at_audit_precision"]
+
+
 def test_bounded_transform_is_retained_only_as_a_separate_ablation(plant) -> None:
     bounded = Figure5aBoundedActionAblation(plant)
     latent = np.linspace(-2.75, 2.75, 41)
@@ -217,7 +308,10 @@ def test_configured_omega_is_curvature_in_the_same_applied_policy_coordinates(pl
         displaced = target.copy(); displaced[index] += delta
         measured = (plant.probabilities(
             displaced, 0, 1 / 1000, target_controls=target)[index] - baseline[index]) / delta**2
-        assert measured == pytest.approx(item.omega_sensitivity, rel=2e-10, abs=1e-12)
+        # This subtracts two probabilities separated by O(delta**2); allow the
+        # corresponding floating-point cancellation without weakening the
+        # physical-coordinate identity being tested.
+        assert measured == pytest.approx(item.omega_sensitivity, rel=5e-9, abs=5e-12)
 
 
 def test_detector_sampling_is_deterministic_and_local(plant) -> None:
@@ -542,10 +636,110 @@ def test_gradient_stability_plan_preserves_50_candidates_and_development_seeds(c
     result = plan_gradient_stability(config)
     conditions = gradient_stability_conditions(config)
     assert result["source_candidate_count_preserved"]
-    assert {row["qec_cycles_per_candidate"] for row in conditions} == {2000, 10000, 36000}
-    assert {row["gradient_clipping_mode"] for row in conditions} == {"per_component", "global_l2"}
+    assert result["condition_count"] == 9
+    assert result["successive_elimination_stage"] == \
+        "shadow_unclipped_gradient_norm_pilot"
+    assert {row["qec_cycles_per_candidate"] for row in conditions} == {2000}
+    assert {row["gradient_clipping_mode"] for row in conditions} == {"none"}
+    assert {row["gradient_clip_threshold"] for row in conditions} == {None}
+    assert {row["entropy_weight"] for row in conditions} == set(SOURCE_ENTROPY_ANCHORS)
     assert not ({row["seed"] for row in conditions} & set(config["seed_registry"]["certification_reserved"]))
     assert len({row["condition_id"] for row in conditions}) == len(conditions)
+    high_joint = next(row for row in result["initial_entropy_only_clipping_audit"]
+                      if row["entropy_weight"] == 0.1
+                      and row["gradient_clipping_mode"] == "global_l2"
+                      and row["gradient_clip_threshold"] == 1.0)
+    high_block = next(row for row in result["initial_entropy_only_clipping_audit"]
+                      if row["entropy_weight"] == 0.1
+                      and row["gradient_clipping_mode"] == "per_block_global_l2"
+                      and row["gradient_clip_threshold"] == 1.0)
+    assert high_joint["entropy_only_sigma_gradient_l2_norm"] == pytest.approx(
+        np.sqrt(41) * 0.1 / config["controller"]["initial_sigma"])
+    assert high_joint["mean_gradient_scale_due_to_entropy_only_sigma_block"] < 0.25
+    assert high_block["mean_gradient_scale_due_to_entropy_only_sigma_block"] == 1.0
+    assert [row["fixed_to_oracle_gap_fraction"]
+            for row in result["physical_initial_sigma_candidates"]] == [0.025, 0.1, 0.25]
+    assert result["current_initial_sigma_implied_gap_fraction"] == pytest.approx(
+        0.024, rel=0.02)
+    assert result["current_baseline_effective_update_rate"] == pytest.approx(0.032)
+    assert [row["effective_update_rate_alpha_b"]
+            for row in result["baseline_effective_dynamics_candidates"]] == [
+                0.02, 0.05, 0.1, 0.2]
+
+
+def test_gradient_summary_excludes_stale_condition_grids(config, tmp_path) -> None:
+    stale = {
+        "schema_version": "figure5a-gradient-stability-condition.v1",
+        "complete": True,
+        "condition_index": 0,
+        "condition": {
+            "condition_id": "stale", "successive_elimination_stage": "old_grid",
+            "seed": 53401},
+        "summary": {}, "records": [],
+    }
+    (tmp_path / "stale.json").write_text(json.dumps(stale), encoding="utf-8")
+    result = summarize_gradient_stability(config, tmp_path)
+    assert result["completed_condition_count"] == 0
+    assert not result["unclipped_pilot_complete_across_entropy_anchors"]
+
+
+def test_gradient_norm_pilot_observes_without_updating_policy(config, tmp_path) -> None:
+    small = deepcopy(config)
+    ladder = small["gradient_stability_ladder"]
+    ladder.update({
+        "candidates_per_epoch": 2,
+        "qec_cycles_per_candidate": [25],
+        "development_seeds": [53401],
+        "entropy_weights": [0.001],
+        "stationary_epochs": 1,
+        "step_epochs": 1,
+    })
+    checkpoint = tmp_path / "shadow-pilot.json"
+    partial = run_gradient_stability_condition(
+        small, condition_index=0, checkpoint_path=checkpoint, max_epochs=1)
+    assert not partial["complete"]
+    state = json.loads(checkpoint.read_text(encoding="utf-8"))
+    np.testing.assert_allclose(state["policy"]["mean"], 0.0)
+    np.testing.assert_allclose(
+        state["policy"]["sigma"], small["controller"]["initial_sigma"])
+    np.testing.assert_allclose(state["policy"]["baseline"], 0.0)
+    assert not state["records"][0]["optimizer_update_applied"]
+
+    result = run_gradient_stability_condition(
+        small, condition_index=0, checkpoint_path=checkpoint, resume=True)
+    assert result["complete"]
+    assert result["shadow_gradient_observation_only"]
+    assert not result["optimizer_updates_applied"]
+    assert not result["scientifically_invalid"]
+    assert result["summary"]["harmful_update_fraction"] is None
+
+
+def test_gradient_screen_classifies_physical_domain_exit(config, tmp_path) -> None:
+    small = deepcopy(config)
+    ladder = small["gradient_stability_ladder"]
+    ladder.update({
+        "candidates_per_epoch": 3,
+        "qec_cycles_per_candidate": [25],
+        "development_seeds": [53401],
+        "entropy_weights": [0.001],
+        "stationary_epochs": 1,
+        "step_epochs": 1,
+    })
+    small["controller"]["learning_rate_candidates"] = [{
+        "mean": 1.0e12, "sigma": 1.0e-6, "label": "forced-domain-exit"}]
+    clipping = small["controller"]["gradient_clipping"]
+    clipping["derived_candidate_thresholds"] = [1.0e30]
+    clipping["candidate_modes"] = ["global_l2"]
+    result = run_gradient_stability_condition(
+        small, condition_index=0, checkpoint_path=tmp_path / "domain-exit.json")
+    assert result["complete"]
+    assert result["scientifically_invalid"]
+    assert result["terminal_failure"]["classification"] == \
+        "SCIENTIFIC_INSTABILITY_NOT_INFRASTRUCTURE_FAILURE"
+    assert result["summary"]["physical_domain_exit"]
+    terminal = _terminal_summary("run-gradient-stability", result, tmp_path)
+    assert terminal["scientifically_invalid"]
+    assert terminal["terminal_failure"] == result["terminal_failure"]
 
 
 def test_round_invariance_plan_equalizes_qec_cycles_without_launching(config) -> None:

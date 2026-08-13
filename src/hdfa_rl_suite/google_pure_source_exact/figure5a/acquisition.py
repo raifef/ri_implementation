@@ -27,7 +27,7 @@ STREAMS = ("fixed", "optimal", "stochastic", "learned_mean")
 DIAGNOSTIC_STREAMS = ("fixed", "optimal", "learned_mean")
 STOCHASTIC_STREAM = "stochastic"
 COORDINATE_CONTRACT = "SOURCE_GAUSSIAN_P_EQUALS_APPLIED_PLANT_P_V1"
-FIGURE5A_IMPLEMENTATION_VERSION = "figure5a-source-coordinate-unbounded-plant.v3"
+FIGURE5A_IMPLEMENTATION_VERSION = "figure5a-exact-pauli-curvature-family-plant.v5"
 CHECKPOINT_SCHEMA_VERSION = "figure5a-cell-checkpoint.v6"
 ARTIFACT_SCHEMA_VERSION = "figure5a-cell.v6"
 DIAGNOSTIC_ACQUISITION_MODE = DIAGNOSTIC_STREAM_ACQUISITION_CONTRACT
@@ -266,6 +266,7 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
                 "gradient_clipping_mode", "gradient_clip_threshold",
                 "gradient_global_l2_norm_before_clipping",
                 "gradient_global_l2_norm_after_clipping", "gradient_global_clip_scale",
+                "gradient_block_clip_scales",
                 "gradient_component_count", "gradient_clipped_component_count",
                 "gradient_clipped_component_fraction",
                 "raw_mean_gradient_l2_norm", "raw_sigma_gradient_l2_norm",
@@ -337,7 +338,12 @@ def run_cell(*, protocol: Figure5aProtocol, plant: Figure5aStimPlant, frequency:
             "threshold": optimizer_config.gradient_clip_threshold,
             "source_identifiability": "SOURCE_UNSPECIFIED_PREREGISTERED_NUISANCE",
             "applied_before_momentum": True,
-            "global_l2_scope": "mean_sigma_and_detector_baseline_joint"},
+            "global_l2_scope": (
+                "separate_mean_sigma_and_detector_baseline_blocks"
+                if optimizer_config.gradient_clipping_mode.value == "per_block_global_l2"
+                else "mean_sigma_and_detector_baseline_joint"
+                if optimizer_config.gradient_clipping_mode.value == "global_l2"
+                else None)},
         "stream_totals": totals,
         "stochastic_ratio": ratios, "learned_mean_ratio": learned_ratios,
         "finite_shot_denominator_nonzero": finite_shot_denominator_nonzero,

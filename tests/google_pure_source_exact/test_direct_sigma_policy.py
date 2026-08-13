@@ -162,6 +162,35 @@ def test_global_l2_gradient_clipping_uses_one_joint_scale_and_round_trips() -> N
     assert diagnostics["gradient_global_l2_norm_after_clipping"] == pytest.approx(2.5)
 
 
+def test_per_block_global_l2_does_not_scale_mean_with_large_sigma_gradient() -> None:
+    optimizer = DirectSigmaOptimizer(1, 1, OptimizerConfig(
+        1.0, 1.0, 1.0, maximum_sigma=10.0,
+        gradient_clipping_mode="per_block_global_l2", gradient_clip_threshold=1.0))
+    diagnostics = optimizer.step(
+        np.zeros(1), np.ones(1), np.zeros(1),
+        np.asarray([0.5]), np.asarray([4.0]), np.asarray([0.25]))
+    np.testing.assert_allclose(optimizer.mean_velocity, [0.5])
+    np.testing.assert_allclose(optimizer.sigma_velocity, [1.0])
+    np.testing.assert_allclose(optimizer.baseline_velocity, [0.25])
+    assert diagnostics["gradient_block_clip_scales"] == {
+        "mean": 1.0, "sigma": 0.25, "baseline": 1.0}
+    restored = DirectSigmaOptimizer.from_state_dict(optimizer.state_dict())
+    assert restored.config.gradient_clipping_mode == \
+        GradientClippingMode.PER_BLOCK_GLOBAL_L2
+
+
+def test_gradient_diagnostics_do_not_mutate_optimizer_state() -> None:
+    optimizer = DirectSigmaOptimizer(1, 1, OptimizerConfig(
+        0.1, 0.1, 0.1, gradient_clipping_mode="none"))
+    before = optimizer.state_dict()
+    diagnostics = optimizer.diagnose_gradients(
+        np.asarray([2.0]), np.asarray([3.0]), np.asarray([4.0]))
+    assert diagnostics["raw_mean_gradient_l2_norm"] == pytest.approx(2.0)
+    assert diagnostics["raw_sigma_gradient_l2_norm"] == pytest.approx(3.0)
+    assert diagnostics["raw_baseline_gradient_l2_norm"] == pytest.approx(4.0)
+    assert optimizer.state_dict() == before
+
+
 @pytest.mark.parametrize(
     ("mode", "threshold"),
     [("none", 1.0), ("global_l2", None), ("per_component", 0.0)],

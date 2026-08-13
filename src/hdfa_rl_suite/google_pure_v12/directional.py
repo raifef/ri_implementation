@@ -8,6 +8,7 @@ from typing import Any, Callable
 import numpy as np
 
 from hdfa_rl_suite.google_pure_source_exact.figure5a.plant import Figure5aStimPlant
+from hdfa_rl_suite.google_pure_source_exact.figure5a.validation import build_plant
 from hdfa_rl_suite.google_pure_source_exact.paper_families.common import (
     SparseControlPlant,
     _sparse_source_loss,
@@ -43,15 +44,7 @@ class DirectionalCase:
 
 
 def _figure5a_plant() -> Figure5aStimPlant:
-    config = read_json(ROOT / "configs/google_pure_source_exact/figure5a.json")["plant"]
-    return Figure5aStimPlant(
-        rounds=int(config["circuit_rounds"]), basis=str(config["basis"]),
-        ensemble_seed=int(config["ensemble_seed"]),
-        one_qubit_irreducible=tuple(config["one_qubit_irreducible"]),
-        two_qubit_irreducible=tuple(config["two_qubit_irreducible"]),
-        one_qubit_omega=tuple(config["one_qubit_omega"]),
-        two_qubit_omega=tuple(config["two_qubit_omega"]),
-    )
+    return build_plant(read_json(ROOT / "configs/google_pure_source_exact/figure5a.json"))
 
 
 def reference_directional_curvature() -> float:

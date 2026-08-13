@@ -25,7 +25,9 @@ from .entropy_scan import (build_conditions, classify_anchor_rows, reduce_dense_
 from .gradient_stability import (gradient_stability_conditions, plan_gradient_stability,
                                  run_gradient_stability_condition,
                                  summarize_gradient_stability)
+from .marginal_exactness import audit_marginal_exactness
 from .normalization import build_empirical_normalization
+from .plant_calibration import calibrate_all_variants, plot_mapping_sensitivity_diagnostics
 from .round_invariance import plan_round_invariance, run_round_invariance
 from .validation import build_plant, dependency_hashes, physical_preflight
 
@@ -413,6 +415,8 @@ def _terminal_summary(
     else:
         artifact_paths = {
             "source-contract": output / "source_contract.json",
+            "audit-marginals": output / "marginal_exactness.json",
+            "plot-plant-diagnostics": output / "plant_mapping_sensitivity.json",
             "preflight": output / "preflight.json",
             "plan-gradient-stability": output / "plans" / "gradient_stability.json",
             "summarize-gradient-stability": output / "gradient_stability" / "summary.json",
@@ -422,10 +426,14 @@ def _terminal_summary(
         if command == "calibrate-normalization" and config is not None:
             artifact_paths[command] = ROOT / config["ablations"][
                 "empirical_relative_normalization_bundle"]
+        if command == "calibrate-plant" and config is not None:
+            artifact_paths[command] = ROOT / config["dependencies"]["plant_calibration"]
         if command == "run-gradient-stability":
             summary["checkpoint_path"] = result.get("checkpoint_path")
             summary["condition"] = result.get("condition")
             summary["result_summary"] = result.get("summary")
+            summary["scientifically_invalid"] = result.get("scientifically_invalid", False)
+            summary["terminal_failure"] = result.get("terminal_failure")
         elif command in artifact_paths:
             summary["artifact_path"] = str(artifact_paths[command].resolve())
         for key in (
@@ -442,6 +450,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(); parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG); parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("source-contract"); sub.add_parser("calibrate-normalization")
+    sub.add_parser("calibrate-plant")
+    marginal_audit = sub.add_parser("audit-marginals")
+    marginal_audit.add_argument("--random-policies", type=int, default=100)
+    marginal_audit.add_argument("--gradient-policies", type=int, default=3)
+    marginal_audit.add_argument("--monte-carlo-policies", type=int, default=3)
+    marginal_audit.add_argument("--monte-carlo-qec-cycles", type=int, default=900_000)
+    sub.add_parser("plot-plant-diagnostics")
     sub.add_parser("preflight")
     sub.add_parser("plan-gradient-stability")
     gradient_run = sub.add_parser("run-gradient-stability")
@@ -462,6 +477,21 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "calibrate-normalization":
         plant = build_plant(config); result = build_empirical_normalization(plant)
         atomic_json(ROOT / config["ablations"]["empirical_relative_normalization_bundle"], result)
+    elif args.command == "calibrate-plant":
+        result = calibrate_all_variants(config)
+        atomic_json(ROOT / config["dependencies"]["plant_calibration"], result)
+    elif args.command == "audit-marginals":
+        result = audit_marginal_exactness(
+            config, random_policy_count=args.random_policies,
+            gradient_policy_count=args.gradient_policies,
+            monte_carlo_policy_count=args.monte_carlo_policies,
+            monte_carlo_qec_cycles=args.monte_carlo_qec_cycles)
+        atomic_json(args.output / "marginal_exactness.json", result)
+    elif args.command == "plot-plant-diagnostics":
+        calibration = _load(ROOT / config["dependencies"]["plant_calibration"])
+        result = plot_mapping_sensitivity_diagnostics(
+            calibration, args.output / "plant_mapping_sensitivity.png")
+        atomic_json(args.output / "plant_mapping_sensitivity.json", result)
     elif args.command == "preflight": result = physical_preflight(ROOT, config); atomic_json(args.output / "preflight.json", result); plant = build_plant(config); atomic_json(args.output / "parameter_inventory.json", {"plant_hash": plant.plant_hash, "rows": plant.inventory_rows()}); atomic_json(args.output / "detector_mask.json", {"plant_hash": plant.plant_hash, "mask": plant.mask.astype(int).tolist()})
     elif args.command == "plan-gradient-stability":
         result = plan_gradient_stability(config)

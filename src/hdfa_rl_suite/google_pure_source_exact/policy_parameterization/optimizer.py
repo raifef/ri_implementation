@@ -21,6 +21,7 @@ class GradientClippingMode(StrEnum):
     NONE = "none"
     PER_COMPONENT = "per_component"
     GLOBAL_L2 = "global_l2"
+    PER_BLOCK_GLOBAL_L2 = "per_block_global_l2"
 
 
 @dataclass(frozen=True)
@@ -73,6 +74,7 @@ def _clip_gradients(
     threshold = config.gradient_clip_threshold
     clipped_component_count = 0
     scale = 1.0
+    block_scales = {"mean": 1.0, "sigma": 1.0, "baseline": 1.0}
     if config.gradient_clipping_mode == GradientClippingMode.NONE:
         clipped = tuple(value.copy() for value in values)
     elif config.gradient_clipping_mode == GradientClippingMode.PER_COMPONENT:
@@ -84,6 +86,18 @@ def _clip_gradients(
         scale = min(1.0, threshold / pre_norm) if pre_norm > 0 else 1.0
         clipped_component_count = int(flattened.size if scale < 1.0 else 0)
         clipped = tuple(value * scale for value in values)
+        block_scales = {key: float(scale) for key in block_scales}
+    elif config.gradient_clipping_mode == GradientClippingMode.PER_BLOCK_GLOBAL_L2:
+        assert threshold is not None
+        norms = [float(np.linalg.norm(value)) for value in values]
+        scales = [min(1.0, threshold / norm) if norm > 0 else 1.0 for norm in norms]
+        clipped = tuple(value * block_scale for value, block_scale in zip(
+            values, scales, strict=True))
+        clipped_component_count = int(sum(
+            value.size for value, block_scale in zip(values, scales, strict=True)
+            if block_scale < 1.0))
+        scale = min(scales)
+        block_scales = dict(zip(block_scales, map(float, scales), strict=True))
     else:  # pragma: no cover - guarded by OptimizerConfig
         raise ValueError(f"unsupported gradient clipping mode: {config.gradient_clipping_mode}")
     post_flattened = np.concatenate([value.reshape(-1) for value in clipped])
@@ -93,6 +107,7 @@ def _clip_gradients(
         "gradient_global_l2_norm_before_clipping": pre_norm,
         "gradient_global_l2_norm_after_clipping": float(np.linalg.norm(post_flattened)),
         "gradient_global_clip_scale": float(scale),
+        "gradient_block_clip_scales": block_scales,
         "gradient_component_count": int(flattened.size),
         "gradient_clipped_component_count": clipped_component_count,
         "gradient_clipped_component_fraction": float(clipped_component_count / flattened.size),
@@ -111,6 +126,20 @@ class DirectSigmaOptimizer:
         self.sigma_velocity = np.zeros(dimension)
         self.baseline_velocity = np.zeros(detector_count)
         self.steps = 0
+
+    def diagnose_gradients(
+        self, grad_mean: np.ndarray, grad_sigma: np.ndarray,
+        grad_baseline: np.ndarray,
+    ) -> dict[str, Any]:
+        """Return clipping diagnostics without mutating optimizer or policy state."""
+        gradients = (np.asarray(grad_mean, dtype=float), np.asarray(grad_sigma, dtype=float),
+                     np.asarray(grad_baseline, dtype=float))
+        expected_shapes = (self.mean_velocity.shape, self.sigma_velocity.shape,
+                           self.baseline_velocity.shape)
+        if tuple(value.shape for value in gradients) != expected_shapes:
+            raise ValueError(f"optimizer gradient shapes must be {expected_shapes}")
+        _, diagnostics = _clip_gradients(gradients, self.config)
+        return diagnostics
 
     def step(self, mean: np.ndarray, sigma: np.ndarray, baseline: np.ndarray,
              grad_mean: np.ndarray, grad_sigma: np.ndarray, grad_baseline: np.ndarray,
